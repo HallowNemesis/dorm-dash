@@ -1,0 +1,13 @@
+{
+  "name": "dormdash-project",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start:frontend": "cd dormdash-frontend && npm start",
+    "start:backend": "cd dormdash-backend && npm run start",
+    "start": "concurrently \"npm run start:frontend\" \"npm run start:backend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
