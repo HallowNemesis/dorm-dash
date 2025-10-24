@@ -1,6 +1,6 @@
-CREATE DATABASE dormdash;
+CREATE DATABASE dormdash-db;
 
-USE dormdash;
+USE dormdash-db;
 
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
