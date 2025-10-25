@@ -30,7 +30,7 @@ export default function SignUp() {
       <PasswordInput onPassChange={setPassHash}/>
       <PasswordInput onPassChange={setConfirmPassHash}/>
       <Text>Nevermind! Take me <Link href={{pathname:"/", params:{"email":email}}}>Back</Link></Text>
-      <Button onPress={()=>Alert.alert(email,setPassHash+" "+setConfirmPassHash)}>Sign Up</Button>
+      <Button onPress={()=>Alert.alert(email,passHash+" "+ confirmPassHash)}>Sign Up</Button>
     </View>
   );
 }

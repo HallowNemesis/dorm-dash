@@ -8,5 +8,5 @@ type Props={
     defaultValue:""
 }
 export default function EmailInput({onEmailChange,defaultValue}:Props){
-    return <TextInput style={loginStyle().input} defaultValue={defaultValue} placeholderTextColor="#6e6e6e" autoComplete="email" onChangeText={newEmail=>onEmailChange(newEmail)} placeholder="email@university.edu"/>
+    return <TextInput style={loginStyle().input} importantForAutofill="yes" enterKeyHint="done" enablesReturnKeyAutomatically={false} inputMode="email" defaultValue={defaultValue} placeholderTextColor="#6e6e6e" autoComplete="email" onChangeText={newEmail=>onEmailChange(newEmail)} placeholder="email@university.edu"/>
 }
