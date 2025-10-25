@@ -2,17 +2,20 @@ import { Button } from "@react-navigation/elements";
 import { useState } from "react";
 import { Text, View,StyleSheet, Alert } from "react-native";
 import { Link } from "expo-router";
-import { useLocalSearchParams } from "expo-router";
 import EmailInput from "./components/emailInput";
+import PasswordInput from "./components/passwordInput";
+import { useLocalSearchParams } from "expo-router";
 const loginStyle = StyleSheet.create({
    title:{
     fontSize:50,
     fontWeight:100
    }
 })
-export default function Index() {
+export default function SignUp() {
   const [email,setEmail]= useState('')
-   const local = useLocalSearchParams()
+  const[passHash,setPassHash]=useState('')
+  const[confirmPassHash,setConfirmPassHash]=useState('')
+  const local = useLocalSearchParams()
   return (
     <View
       style={{
@@ -22,10 +25,12 @@ export default function Index() {
         marginBottom:"80%"
       }}
     >
-      <Text style={loginStyle.title}>Reset Password</Text>
+      <Text style={loginStyle.title}>Sign Up</Text>
       <EmailInput defaultValue={local.email} onEmailChange={setEmail}/>
+      <PasswordInput onPassChange={setPassHash}/>
+      <PasswordInput onPassChange={confirmPassHash}/>
       <Text>Nevermind! Take me <Link href={"/"}>back</Link></Text>
-      <Button onPress={()=>Alert.alert(email)}>Reset Password</Button>
+      <Button onPress={()=>Alert.alert(email,setPassHash+" "+setConfirmPassHash)}>Sign Up</Button>
     </View>
   );
 }
