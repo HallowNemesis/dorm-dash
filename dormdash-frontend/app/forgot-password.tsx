@@ -24,7 +24,7 @@ export default function Index() {
     >
       <Text style={loginStyle.title}>Reset Password</Text>
       <EmailInput defaultValue={local.email} onEmailChange={setEmail}/>
-      <Text>Nevermind! Take me <Link href={"/"}>back</Link></Text>
+      <Text>Nevermind! Take me <Link href={{pathname:"/", params:{"email":email}}}>Back</Link></Text>
       <Button onPress={()=>Alert.alert(email)}>Reset Password</Button>
     </View>
   );

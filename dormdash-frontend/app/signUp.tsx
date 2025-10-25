@@ -28,8 +28,8 @@ export default function SignUp() {
       <Text style={loginStyle.title}>Sign Up</Text>
       <EmailInput defaultValue={local.email} onEmailChange={setEmail}/>
       <PasswordInput onPassChange={setPassHash}/>
-      <PasswordInput onPassChange={confirmPassHash}/>
-      <Text>Nevermind! Take me <Link href={"/"}>back</Link></Text>
+      <PasswordInput onPassChange={setConfirmPassHash}/>
+      <Text>Nevermind! Take me <Link href={{pathname:"/", params:{"email":email}}}>Back</Link></Text>
       <Button onPress={()=>Alert.alert(email,setPassHash+" "+setConfirmPassHash)}>Sign Up</Button>
     </View>
   );
