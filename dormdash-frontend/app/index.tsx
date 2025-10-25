@@ -29,9 +29,9 @@ export default function Index() {
       }}
     >
       <Text style={loginStyle.title}>Login</Text>
-      <TextInput style={loginStyle.input} placeholderTextColor="#6e6e6e" onChangeText={newEmail=>setEmail(newEmail)} placeholder="email@university.edu"/>
+      <TextInput style={loginStyle.input} placeholderTextColor="#6e6e6e" autoComplete="email" onChangeText={newEmail=>setEmail(newEmail)} placeholder="email@university.edu"/>
         
-      <TextInput style={loginStyle.input} onChangeText={
+      <TextInput style={loginStyle.input} autoComplete="current-password" onChangeText={
         //Eventually this should use some sort of hashing function, but i can't find a modern solution for react native (short of building our own..)
         // I tried bcrypt and similar libraries, but they are unavailbe for react native.
         newPass=>setPassHash(newPass)
