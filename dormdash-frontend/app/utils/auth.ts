@@ -24,6 +24,11 @@ export async function Login(email:string, password:string, onOk:()=>void, onFail
           return {message:"Fatal error", ok: false}
     }
 }
+export async function Logout(onLoggedOut:()=>void){
+  await SecureStore.deleteItemAsync("email");
+  await SecureStore.deleteItemAsync("password");
+  onLoggedOut();
+}
 export async function  CreateAcc(name:string,email:string,password:string,onOk:()=>void,onBad:(message:string)=>void) {
     try {
           const response = await fetch(`${API_BASE}/signup`, {
