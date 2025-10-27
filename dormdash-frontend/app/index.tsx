@@ -5,7 +5,7 @@ import { Link, useNavigation, useRouter, useLocalSearchParams } from "expo-route
 import EmailInput from "./components/emailInput";
 import PasswordInput from "./components/passwordInput";
 import * as SecureStore from 'expo-secure-store'
-import Login from "./utils/auth";
+import { Login } from "./utils/auth";
 // ngrok tunnel URL for backend API 
 const API_BASE = "https://dawn-youthful-disrespectfully.ngrok-free.dev/api/auth";
 
@@ -35,7 +35,7 @@ export default function Index() {
       if(!password){
         return;
       }
-      await Login(email, password,()=>router.push({ pathname: "/mainView", params: { email } }),(message)=> Alert.alert("Login Failed", message || "Invalid email or password"))
+      await Login(email, password,()=>router.push({ pathname: "/mainView", params: { email } }),(message:string)=> Alert.alert("Login Failed", message || "Invalid email or password"))
     }
     TryLogin();
   })
@@ -44,7 +44,7 @@ export default function Index() {
       Alert.alert("Error", "Please enter both email and password");
       return;
     }
-    await Login(email, passHash,()=>router.push({ pathname: "/mainView", params: { email } }),(message)=> Alert.alert("Login Failed", message || "Invalid email or password"))
+    await Login(email, passHash,()=>router.push({ pathname: "/mainView", params: { email } }),(message:string)=> Alert.alert("Login Failed", message || "Invalid email or password"))
   };
 
   return (
