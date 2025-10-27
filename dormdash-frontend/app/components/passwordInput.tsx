@@ -1,9 +1,7 @@
 import { TextInput } from "react-native";
 import loginStyle from "./input-style";
 type Props={
-    onPassChange:(str:string)=>{
-
-    }
+    onPassChange:(str:string)=> void;
 }
 export default function PasswordInput({onPassChange}:Props){
     return <TextInput style={loginStyle().input} importantForAutofill="yes" enterKeyHint="done" enablesReturnKeyAutomatically={false} autoComplete="current-password" onChangeText={

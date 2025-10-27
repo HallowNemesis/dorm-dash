@@ -1,3 +1,5 @@
 # in backend/.gitignore
 .env
 node_modules/
+
+cloud-sql-proxy.exe
