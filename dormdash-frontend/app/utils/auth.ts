@@ -11,8 +11,8 @@ export async function Login(email:string, password:string, onOk:()=>void, onFail
     const data = await response.json();
     if(response.ok){
         onOk();
-        await SecureStore.setItem("email",email);
-        await SecureStore.setItem("password",password);
+        SecureStore.setItem("email", email);
+        SecureStore.setItem("password", password);
     }else{
         onFail(data.message);
     }
@@ -29,7 +29,7 @@ export async function Logout(onLoggedOut:()=>void){
   await SecureStore.deleteItemAsync("password");
   onLoggedOut();
 }
-export async function  CreateAcc(name:string,email:string,password:string,onOk:()=>void,onBad:(message:string)=>void) {
+export async function  CreateAcc(name:string,email:string,password:string,onOk:()=>void,onFail:(message:string)=>void) {
     try {
           const response = await fetch(`${API_BASE}/signup`, {
             method: "POST",
@@ -40,10 +40,10 @@ export async function  CreateAcc(name:string,email:string,password:string,onOk:(
     
           if (response.ok) {
             onOk();
-             await SecureStore.setItem("email",email);
-            await SecureStore.setItem("password",password);
+             SecureStore.setItem("email", email);
+            SecureStore.setItem("password", password);
           } else {
-            onBad(data.message);
+            onFail(data.message);
           }
           return {message:data.message,ok:response.ok}
         } catch (error) {
