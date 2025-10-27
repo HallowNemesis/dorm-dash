@@ -1,10 +1,11 @@
 import { Button } from "@react-navigation/elements";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Text, View, StyleSheet, Alert } from "react-native";
 import { Link, useNavigation, useRouter, useLocalSearchParams } from "expo-router";
 import EmailInput from "./components/emailInput";
 import PasswordInput from "./components/passwordInput";
-
+import * as SecureStore from 'expo-secure-store'
+import Login from "./utils/auth";
 // ngrok tunnel URL for backend API 
 const API_BASE = "https://dawn-youthful-disrespectfully.ngrok-free.dev/api/auth";
 
@@ -24,30 +25,26 @@ export default function Index() {
   const navigation = useNavigation();
   const router = useRouter();
   const local = useLocalSearchParams();
-
+  useEffect(()=>{
+    async function  TryLogin() {
+      let email = await SecureStore.getItemAsync("email");
+      if(! email){
+        return;
+      }
+      let password = await SecureStore.getItemAsync("password");
+      if(!password){
+        return;
+      }
+      await Login(email, password,()=>router.push({ pathname: "/mainView", params: { email } }),(message)=> Alert.alert("Login Failed", message || "Invalid email or password"))
+    }
+    TryLogin();
+  })
   const handleLogin = async () => {
     if (!email || !passHash) {
       Alert.alert("Error", "Please enter both email and password");
       return;
     }
-    try {
-      const response = await fetch(`${API_BASE}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password: passHash }),
-      });
-      const data = await response.json();
-
-      if (response.ok) {
-        Alert.alert("Login Success", `Welcome back, ${data.user?.name || "User"}!`);
-        router.push({ pathname: "/", params: { email } });
-      } else {
-        Alert.alert("Login Failed", data.message || "Invalid email or password");
-      }
-    } catch (error) {
-      Alert.alert("Error", "An error occurred during login");
-      console.error("Login Error:", error);
-    }
+    await Login(email, passHash,()=>router.push({ pathname: "/mainView", params: { email } }),(message)=> Alert.alert("Login Failed", message || "Invalid email or password"))
   };
 
   return (

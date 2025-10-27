@@ -5,6 +5,7 @@ import { Link, useRouter, useLocalSearchParams } from "expo-router";
 import EmailInput from "./components/emailInput";
 import PasswordInput from "./components/passwordInput";
 import inputStyle from "./components/input-style";
+import { CreateAcc } from "./utils/auth";
 
 // ngrok tunnel URL for backend API 
 const API_BASE = "https://dawn-youthful-disrespectfully.ngrok-free.dev/api/auth";
@@ -33,28 +34,16 @@ export default function SignUp() {
       Alert.alert("Error", "Passwords do not match");
       return;
     }
-    try {
-      const response = await fetch(`${API_BASE}/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password: passHash }),
-      });
-      const data = await response.json();
-
-      if (response.ok) {
+    await CreateAcc(name,email,passHash,()=>{
         Alert.alert("Sign Up Success", "Account created successfully");
         router.push({ pathname: "/", params: { email } });
-      } else {
-        Alert.alert(
+    },
+  (message)=>{
+      Alert.alert(
           "Sign Up Failed",
-          data.message || "Unable to sign up with the provided credentials"
+          message || "Unable to sign up with the provided credentials"
         );
-      }
-    } catch (error) {
-      Alert.alert("Error", "An error occurred during sign up");
-      console.error("Sign Up Error:", error);
-    }
-  };
+  });
 
   return (
     <View
