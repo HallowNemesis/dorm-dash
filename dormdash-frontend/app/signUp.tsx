@@ -44,7 +44,7 @@ export default function SignUp() {
           message || "Unable to sign up with the provided credentials"
         );
   });
-
+  }
   return (
     <View
       style={{
