@@ -1,10 +1,9 @@
 import { Button } from "@react-navigation/elements";
 import { useEffect, useState } from "react";
-import { Text, View, StyleSheet, Alert, ScrollView } from "react-native";
+import { Text, View, StyleSheet, Alert } from "react-native";
 import { Link, useRouter, useLocalSearchParams } from "expo-router";
 import EmailInput from "./components/emailInput";
 import PasswordInput from "./components/passwordInput";
-import * as SecureStore from 'expo-secure-store'
 import { Login, TokenAuth } from "../utils/auth"; // Assuming this utility exists
 import GuestView from './components/guestView'
 const loginStyle = StyleSheet.create({

@@ -34,6 +34,7 @@ router.post("/signup", async (req, res) => {
     ]);
     //Create a token... There is probably a easier way to get user.id from the last query? But this should work
      const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+     const user = rows[0];
      const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '2h' });
     res.status(201).json({ message: "User registered successfully!",token:token });
   } catch (err) {
@@ -42,22 +43,23 @@ router.post("/signup", async (req, res) => {
   }
 });
 //Automatic / token-based login
-router.pool('/token-auth', async( req, res)=>{
-  const { token} = req.body;
-  if(!jwt.verify(token,process.env.JWT_SECRET, 
-    async function(err, decoded){
-      if(err)
-        return;
-      ({id,email}=decoded);
-      const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-      if (rows.length === 0) 
-        return res.status(401).json({ message: 'Invalid credentials' });
-      return res.json({message:'Login successful', token})
-  })){
-    //return a expiration error
-    return res.status(401).json({message: 'Expired token'});
-  }
-})
+router.post('/token-auth', async (req, res) => {
+  const { token } = req.body;
+
+  jwt.verify(token, process.env.JWT_SECRET, async function(err, decoded) {
+    if (err) {
+      return res.status(401).json({ message: 'Expired or invalid token' });
+    }
+
+    const { id, email } = decoded;
+    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (rows.length === 0) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    res.json({ message: 'Login successful', token });
+  });
+});
 // LOGIN
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;

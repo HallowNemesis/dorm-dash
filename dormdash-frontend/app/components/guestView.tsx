@@ -1,7 +1,6 @@
 
 // --- Start of New GuestView Component ---
-import { Button } from "@react-navigation/elements";
-import { Text, View, StyleSheet, Alert, ScrollView } from "react-native";
+import { Text, View, StyleSheet, ScrollView, Pressable } from "react-native";
 
 const guestStyle = StyleSheet.create({
   container: {
@@ -77,9 +76,22 @@ export default function GuestView({ onGoToLogin }: GuestViewProps) {
       </ScrollView>
 
       {/* Footer/Action area for guest */}
-      <View style={{ padding: 20, borderTopWidth: 1, borderTopColor: '#ccc', flexDirection: 'row', justifyContent: 'space-around' }}>
-        <Button style={{backgroundColor: '#007AFF'}} onPress={onGoToLogin}> Log In / Sign Up</Button>
-      </View>
+      <View style={{ padding: 20, flexDirection: 'row', justifyContent: 'center' }}>
+  <Pressable
+    onPress={onGoToLogin}
+    style={{
+      backgroundColor: '#007AFF',   // Button background
+      paddingVertical: 12,
+      paddingHorizontal: 25,
+      borderRadius: 999,
+      alignItems: 'center',
+    }}
+  >
+    <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>
+      Continue
+    </Text>
+  </Pressable>
+</View>
     </View>
   );
 }

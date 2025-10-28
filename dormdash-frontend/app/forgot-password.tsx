@@ -1,8 +1,7 @@
 import { Button } from "@react-navigation/elements";
 import { useState } from "react";
 import { Text, View,StyleSheet, Alert } from "react-native";
-import { Link } from "expo-router";
-import { useLocalSearchParams } from "expo-router";
+import { Link, useLocalSearchParams } from "expo-router";
 import EmailInput from "./components/emailInput";
 const loginStyle = StyleSheet.create({
    title:{
@@ -23,7 +22,7 @@ export default function Index() {
       }}
     >
       <Text style={loginStyle.title}>Reset Password</Text>
-      <EmailInput defaultValue={local.email} onEmailChange={setEmail}/>
+      <EmailInput defaultValue={local.email as string} onEmailChange={setEmail}/>
       <Text>Nevermind! Take me <Link href={{pathname:"/", params:{"email":email}}}>Back</Link></Text>
       <Button onPress={()=>Alert.alert(email)}>Reset Password</Button>
     </View>
