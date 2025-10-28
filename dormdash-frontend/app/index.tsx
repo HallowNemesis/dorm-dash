@@ -1,6 +1,6 @@
 import { Button } from "@react-navigation/elements";
 import { useEffect, useState } from "react";
-import { Text, View, StyleSheet, Alert, ScrollView } from "react-native";
+import { Text, View, StyleSheet, Alert } from "react-native";
 import { Link, useRouter, useLocalSearchParams } from "expo-router";
 import EmailInput from "./components/emailInput";
 import PasswordInput from "./components/passwordInput";

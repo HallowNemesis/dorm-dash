@@ -1,7 +1,7 @@
 import { Button } from "@react-navigation/elements";
 import { useState } from "react";
-import { Text, View, StyleSheet, Alert, TextInput } from "react-native";
-import { Link, useRouter, useLocalSearchParams } from "expo-router";
+import { Pressable, Text, View, StyleSheet, Alert, TextInput } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import EmailInput from "./components/emailInput";
 import PasswordInput from "./components/passwordInput";
 import inputStyle from "./components/input-style";
@@ -28,20 +28,25 @@ export default function SignUp() {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
+    const eduEmailRegex = /^[a-zA-Z0-9_]+@[a-zA-Z0-9]+\.edu$/;
+    if (!eduEmailRegex.test(email)) {
+      Alert.alert("Error", "Please use a valid .edu email address");
+      return;
+    }
     if (passHash !== confirmPassHash) {
       Alert.alert("Error", "Passwords do not match");
       return;
     }
-    await CreateAcc(name,email,passHash,()=>{
-        Alert.alert("Sign Up Success", "Account created successfully");
-        router.push({ pathname: "/", params: { email } });
+    await CreateAcc(name, email, passHash, () => {
+      Alert.alert("Sign Up Success", "Account created successfully");
+      router.push({ pathname: "/", params: { email } });
     },
-  (message)=>{
-      Alert.alert(
+      (message) => {
+        Alert.alert(
           "Sign Up Failed",
           message || "Unable to sign up with the provided credentials"
         );
-  });
+      });
   }
   return (
     <View
@@ -62,10 +67,23 @@ export default function SignUp() {
       <EmailInput defaultValue={local.email as string} onEmailChange={setEmail} />
       <PasswordInput onPassChange={setPassHash} />
       <PasswordInput onPassChange={setConfirmPassHash} />
-      <Text>
-        Nevermind! Take me{" "}
-        <Link href={{ pathname: "/", params: { email } }}>Back</Link>
-      </Text>
+      <Pressable
+        onPress={() => router.push({ pathname: "/", params: { email } })}
+        style={{
+          backgroundColor: "#ff6b6bff",
+          paddingVertical: 5,
+          paddingHorizontal: 15,
+          borderRadius: 999, // fully rounded
+          marginTop: 20,
+          marginBottom: 10,
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+          Take me Back
+        </Text>
+      </Pressable>
+
       <Button onPress={handleSignUp}>Sign Up</Button>
     </View>
   );
