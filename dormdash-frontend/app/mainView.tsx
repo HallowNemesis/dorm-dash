@@ -35,6 +35,7 @@ const boundingBoxForRegion = mapRef.current?.boundingBoxForRegion(region);
   return (
     <View style={{ flex: 1 }}>
       <MapView
+        ref={mapRef}
         style={{ width: "100%", height: "100%" }}
         onMapLoaded={()=>{
         if(mapRef.current==null)return;
