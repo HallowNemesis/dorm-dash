@@ -50,8 +50,7 @@ export async function Login(email:string, password:string, onOk:()=>void, onFail
     }
 }
 export async function Logout(onLoggedOut:()=>void){
-  await SecureStore.deleteItemAsync("email");
-  await SecureStore.deleteItemAsync("password");
+  await SecureStore.deleteItemAsync("token")
   onLoggedOut();
 }
 export async function  CreateAcc(name:string,email:string,password:string,onOk:()=>void,onFail:(message:string)=>void) {

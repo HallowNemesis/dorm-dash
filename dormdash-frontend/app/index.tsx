@@ -5,7 +5,7 @@ import { Link, useRouter, useLocalSearchParams } from "expo-router";
 import EmailInput from "./components/emailInput";
 import PasswordInput from "./components/passwordInput";
 import * as SecureStore from 'expo-secure-store'
-import { Login } from "../utils/auth"; // Assuming this utility exists
+import { Login, TokenAuth } from "../utils/auth"; // Assuming this utility exists
 
 // --- Start of New GuestView Component ---
 
@@ -112,33 +112,14 @@ export default function Index() {
   // Renamed to ensure auto-login check only runs once or when the view changes
   useEffect(() => {
     async function TryLogin() {
-      if (isLoginView === false) {
-        // Only run auto-login check if we haven't already decided to show the login screen
-        let email = await SecureStore.getItemAsync("email");
-        if (!email) {
-          return; // No stored email, stay on guest view
-        }
-        let password = await SecureStore.getItemAsync("password");
-        if (!password) {
-          return; // No stored password, stay on guest view
-        }
-        
-        // Attempt auto-login with stored credentials
-        await Login(
-          email,
-          password,
-          () => router.push({ pathname: "/mainView", params: { email } }),
-          (message: string) => {
-            // Auto-login failed, transition to the login view
-            Alert.alert("Auto-Login Failed", message || "Please log in manually.");
-            setIsLoginView(true);
-          }
-        );
-      }
+      //if a user has already logged in, we do not need to show them the FAQ
+      // will show FAQ if a user has not logged in
+      await TokenAuth(()=>{
+        router.push({ pathname: "/mainView"})
+      }) 
     }
     TryLogin();
-  }, [isLoginView]); // Depend on isLoginView to avoid unnecessary checks
-
+  });
   const handleLogin = async () => {
     if (!email || !passHash) {
       Alert.alert("Error", "Please enter both email and password");
