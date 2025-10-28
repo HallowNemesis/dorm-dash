@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { View, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import SearchBox from "./components/SearchBox";
-import MapView, { Polygon } from 'react-native-maps';
+import MapView from 'react-native-maps';
 import * as Location from 'expo-location';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { Logout } from "../utils/auth";

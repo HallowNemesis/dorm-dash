@@ -1,5 +1,4 @@
-import { TextInput } from "react-native";
-import loginStyle from "./input-style";
+import React from "react";
 import GooglePlacesTextInput from 'react-native-google-places-textinput';
 type Props = {
   onSearchChange?: (str: string) => void;
@@ -40,9 +39,25 @@ const customStyles = {
     placeholder: {
       color: '#999',
     }
-  };
+  } as const;
 export default function SearchBox({ onSearchChange, defaultValue = "" }: Props) {
-  return (
-    <GooglePlacesTextInput style={customStyles} placeHolderText="Where do you want to go?" apiKey={process.env.GOOGLE_PLACES_KEY} onPlaceSelect={()=>{}}/>
+  const apiKey = process.env.GOOGLE_PLACES_KEY || "";
+     return (
+    <GooglePlacesTextInput
+      apiKey={apiKey}
+      placeHolderText="Where do you want to go?"
+      value={defaultValue}
+      onPlaceSelect={(place: any) => {
+        const name =
+          place?.name ||
+          place?.formatted_address ||
+          place?.description ||
+          place?.title ||
+          JSON.stringify(place);
+        onSearchChange?.(name);
+      }}
+      onTextChange={onSearchChange}
+      style={customStyles} 
+      />
   );
 }

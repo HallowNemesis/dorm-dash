@@ -7,8 +7,6 @@ import PasswordInput from "./components/passwordInput";
 import inputStyle from "./components/input-style";
 import { CreateAcc } from "../utils/auth";
 
-// ngrok tunnel URL for backend API 
-const API_BASE = "https://dawn-youthful-disrespectfully.ngrok-free.dev/api/auth";
 
 const loginStyle = StyleSheet.create({
   title: {

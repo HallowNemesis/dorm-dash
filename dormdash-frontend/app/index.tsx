@@ -43,7 +43,11 @@ const guestStyle = StyleSheet.create({
   }
 });
 
-function GuestView({ onGoToLogin }) {
+interface GuestViewProps {
+  onGoToLogin: () => void;
+}
+
+function GuestView({ onGoToLogin }: GuestViewProps) {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView style={guestStyle.container}>
@@ -64,7 +68,7 @@ function GuestView({ onGoToLogin }) {
         </View>
         <View style={guestStyle.faqItem}>
           <Text style={guestStyle.faqQuestion}>Q: How do I join the community?</Text>
-          <Text style={guestStyle.content}>A: You can join by clicking the "Log In / Sign Up" button below to create your free account.</Text>
+          <Text style={guestStyle.content}>A: You can join by clicking the Log In / Sign Up button below to create your free account.</Text>
         </View>
 
         <Text style={guestStyle.sectionTitle}>Community Guidelines</Text>
@@ -80,9 +84,7 @@ function GuestView({ onGoToLogin }) {
 
       {/* Footer/Action area for guest */}
       <View style={{ padding: 20, borderTopWidth: 1, borderTopColor: '#ccc', flexDirection: 'row', justifyContent: 'space-around' }}>
-        <Button style={{backgroundColor: '#007AFF'}} onPress={onGoToLogin}>
-          <Text style={{color: 'white'}}>Log In / Sign Up</Text>
-        </Button>
+        <Button style={{backgroundColor: '#007AFF'}} onPress={onGoToLogin}> Log In / Sign Up</Button>
       </View>
     </View>
   );
@@ -180,7 +182,7 @@ export default function Index() {
       </View>
       {/* Option to return to guest view */}
       <Button style={{ marginTop: 20 }} onPress={() => setIsLoginView(false)}>
-        <Text>Back to Preview</Text>
+        Back to Preview
       </Button>
     </View>
   );
