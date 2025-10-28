@@ -5,7 +5,7 @@ import { Link, useRouter, useLocalSearchParams } from "expo-router";
 import EmailInput from "./components/emailInput";
 import PasswordInput from "./components/passwordInput";
 import * as SecureStore from 'expo-secure-store'
-import { Login } from "../utils/auth";
+import { Login, TokenAuth } from "../utils/auth";
 
 const loginStyle = StyleSheet.create({
   title: {
@@ -24,15 +24,7 @@ export default function Index() {
   const local = useLocalSearchParams();
   useEffect(()=>{
     async function  TryLogin() {
-      let email = await SecureStore.getItemAsync("email");
-      if(! email){
-        return;
-      }
-      let password = await SecureStore.getItemAsync("password");
-      if(!password){
-        return;
-      }
-      await Login(email, password,()=>router.push({ pathname: "/mainView", params: { email } }),(message:string)=> Alert.alert("Login Failed", message || "Invalid email or password"))
+      await TokenAuth(()=>router.push({ pathname: "/mainView"}))
     }
     TryLogin();
   })

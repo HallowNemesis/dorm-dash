@@ -32,8 +32,10 @@ router.post("/signup", async (req, res) => {
       email,
       hashedPassword,
     ]);
-
-    res.status(201).json({ message: "User registered successfully!" });
+    //Create a token... There is probably a easier way to get user.id from the last query? But this should work
+     const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+     const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '2h' });
+    res.status(201).json({ message: "User registered successfully!",token:token });
   } catch (err) {
     console.error("Signup error:", err);
     res.status(500).json({ error: "Internal Server Error", details: err.message });
