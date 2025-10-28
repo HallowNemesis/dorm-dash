@@ -52,7 +52,7 @@ router.post('/login', async (req, res) => {
     // Fix column name: your signup saves to `password`, not `password_hash`
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) return res.status(401).json({ message: 'Invalid credentials' });
-
+    
     const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '2h' });
     res.json({ message: 'Login successful', token });
   } catch (error) {

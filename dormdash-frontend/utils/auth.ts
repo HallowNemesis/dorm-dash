@@ -13,6 +13,7 @@ export async function Login(email:string, password:string, onOk:()=>void, onFail
         onOk();
         SecureStore.setItem("email", email);
         SecureStore.setItem("password", password);
+        SecureStore.setItem("token",data.token);
     }else{
         onFail(data.message);
     }
