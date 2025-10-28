@@ -36,6 +36,12 @@ const boundingBoxForRegion = mapRef.current?.boundingBoxForRegion(region);
     <View style={{ flex: 1 }}>
       <MapView
         style={{ width: "100%", height: "100%" }}
+        onMapLoaded={()=>{
+        if(mapRef.current==null)return;
+      
+            mapRef.current?.setMapBoundaries(boundingBoxForRegion?.northEast??{latitude:0, longitude:0},boundingBoxForRegion?.southWest??{latitude:0, longitude:0});
+            mapRef.current?.animateToRegion(region);
+        }}
         showsUserLocation
         showsCompass
         followsUserLocation
