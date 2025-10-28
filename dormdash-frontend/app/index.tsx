@@ -1,13 +1,11 @@
 import { Button } from "@react-navigation/elements";
 import { useEffect, useState } from "react";
 import { Text, View, StyleSheet, Alert } from "react-native";
-import { Link, useNavigation, useRouter, useLocalSearchParams } from "expo-router";
+import { Link, useRouter, useLocalSearchParams } from "expo-router";
 import EmailInput from "./components/emailInput";
 import PasswordInput from "./components/passwordInput";
 import * as SecureStore from 'expo-secure-store'
-import { Login } from "./utils/auth";
-// ngrok tunnel URL for backend API 
-const API_BASE = "https://dawn-youthful-disrespectfully.ngrok-free.dev/api/auth";
+import { Login } from "../utils/auth";
 
 const loginStyle = StyleSheet.create({
   title: {
@@ -22,7 +20,6 @@ const loginStyle = StyleSheet.create({
 export default function Index() {
   const [email, setEmail] = useState("");
   const [passHash, setPassHash] = useState("");
-  const navigation = useNavigation();
   const router = useRouter();
   const local = useLocalSearchParams();
   useEffect(()=>{
