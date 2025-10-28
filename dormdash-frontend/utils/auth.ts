@@ -8,7 +8,7 @@ export async function TokenAuth(onOk:()=>void, onFail?:(message:string)=>void) {
     if (token==null){
       return {message:"No token", ok:false}
     }
-    const response = await fetch(`${API_BASE}//token-auth`, {
+    const response = await fetch(`${API_BASE}/token-auth`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: token }),
