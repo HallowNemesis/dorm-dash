@@ -43,6 +43,6 @@ const customStyles = {
   };
 export default function SearchBox({ onSearchChange, defaultValue = "" }: Props) {
   return (
-    <GooglePlacesTextInput style={customStyles} placeHolderText="Where do you want to go?" apiKey={process.env.GOOGLE_PLACES_KEY} onPlaceSelect={()=>{}}/>
+    <GooglePlacesTextInput style={customStyles} placeHolderText="Where do you want to go?" apiKey={AIzaSyAw07kfNgelVNnT96UdJL6K8z4fzZ_p3Oo} onPlaceSelect={()=>{}}/>
   );
 }
