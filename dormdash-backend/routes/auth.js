@@ -17,6 +17,14 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ error: "All fields are required." });
     }
 
+    // Ensures only .edu emails are used
+    const eduEmailRegex = /^[a-zA-Z0-9_]+@[a-zA-Z0-9]+\.edu$/;
+    if (!eduEmailRegex.test(email)) {
+      return res
+        .status(400)
+        .json({ error: "Only valid .edu email addresses are allowed." });
+    }
+
     // Check if user exists
     const [existingUser] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
     if (existingUser.length > 0) {
