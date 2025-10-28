@@ -39,7 +39,23 @@ router.post("/signup", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error", details: err.message });
   }
 });
-
+//Automatic / token-based login
+router.pool('/token-auth', async( req, res)=>{
+  const { token} = req.body;
+  if(!jwt.verify(token,process.env.JWT_SECRET, 
+    async function(err, decoded){
+      if(err)
+        return;
+      ({id,email}=decoded);
+      const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+      if (rows.length === 0) 
+        return res.status(401).json({ message: 'Invalid credentials' });
+      return res.json({message:'Login successful', token})
+  })){
+    //return a expiration error
+    return res.status(401).json({message: 'Expired token'});
+  }
+})
 // LOGIN
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
