@@ -1,15 +1,19 @@
-import React from "react";
+import Constants from "expo-constants";
 import GooglePlacesTextInput from 'react-native-google-places-textinput';
+
 type Props = {
   onSearchChange?: (str: string) => void;
   defaultValue?: string;
+  onPlaceSelect?: (location: { lat: number; lng: number; name: string }) => void;
 };
+
 const customStyles = {
     container: {
       width: '90%',
        backgroundColor:"#bfbfbf",
       marginHorizontal: 0,
-      borderRadius:10
+      borderRadius:10,
+      alignSelf:"center"
     },
     input: {
       height: 45,
@@ -40,24 +44,33 @@ const customStyles = {
       color: '#999',
     }
   } as const;
-export default function SearchBox({ onSearchChange, defaultValue = "" }: Props) {
-  const apiKey = process.env.GOOGLE_PLACES_KEY || "";
-     return (
+
+export default function SearchBox({ onSearchChange, defaultValue = "", onPlaceSelect, }: Props) {
+  console.log("Google Places Key:", Constants.expoConfig?.extra?.googlePlacesKey);
+
+  const apiKey =
+    Constants.expoConfig?.extra?.googlePlacesKey ||
+    process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ||
+    "";
+
+
+ return (
     <GooglePlacesTextInput
       apiKey={apiKey}
       placeHolderText="Where do you want to go?"
       value={defaultValue}
       onPlaceSelect={(place: any) => {
-        const name =
-          place?.name ||
-          place?.formatted_address ||
-          place?.description ||
-          place?.title ||
-          JSON.stringify(place);
-        onSearchChange?.(name);
+        const coords = place?.geometry?.location;
+        if (coords && onPlaceSelect) {
+          onPlaceSelect({
+            lat: coords.lat,
+            lng: coords.lng,
+            name: place.name || place.formatted_address || "Unknown location",
+          });
+        }
       }}
       onTextChange={onSearchChange}
-      style={customStyles} 
-      />
+      style={customStyles}
+    />
   );
 }

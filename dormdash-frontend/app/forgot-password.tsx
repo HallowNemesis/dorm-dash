@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Text, View,StyleSheet, Alert } from "react-native";
 import { Link, useLocalSearchParams } from "expo-router";
 import EmailInput from "./components/emailInput";
+import {ResetPassword} from "../utils/auth";
+
 const loginStyle = StyleSheet.create({
    title:{
     fontSize:50,
@@ -24,7 +26,19 @@ export default function Index() {
       <Text style={loginStyle.title}>Reset Password</Text>
       <EmailInput defaultValue={local.email as string} onEmailChange={setEmail}/>
       <Text>Nevermind! Take me <Link href={{pathname:"/", params:{"email":email}}}>Back</Link></Text>
-      <Button onPress={()=>Alert.alert(email)}>Reset Password</Button>
+      <Button onPress={()=>{
+        if(!email){
+          Alert.alert("Error","Please enter your email address")
+          return;
+        }
+        ResetPassword(
+          email,
+          ()=> Alert.alert("Success","Password reset email sent successfully"),
+          (msg)=> Alert.alert("Error", msg || "Unable to send password reset email")
+        );
+      }}
+      > Reset Password
+      </Button>
     </View>
   );
 }

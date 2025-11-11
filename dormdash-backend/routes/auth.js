@@ -41,10 +41,10 @@ router.post("/signup", async (req, res) => {
       hashedPassword,
     ]);
     //Create a token... There is probably a easier way to get user.id from the last query? But this should work
-     const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-     const user = rows[0];
-     const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '2h' });
-    res.status(201).json({ message: "User registered successfully!",token:token });
+    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    const user = rows[0];
+    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '2h' });
+    res.status(201).json({ message: "User registered successfully!", token: token });
   } catch (err) {
     console.error("Signup error:", err);
     res.status(500).json({ error: "Internal Server Error", details: err.message });
@@ -54,7 +54,7 @@ router.post("/signup", async (req, res) => {
 router.post('/token-auth', async (req, res) => {
   const { token } = req.body;
 
-  jwt.verify(token, process.env.JWT_SECRET, async function(err, decoded) {
+  jwt.verify(token, process.env.JWT_SECRET, async function (err, decoded) {
     if (err) {
       return res.status(401).json({ message: 'Expired or invalid token' });
     }
@@ -85,6 +85,33 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+      return res.status(400).json({ error: "Email and new password are required." });
+    }
+
+    //Check if user exists
+    const [rows] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "No account found with that email." });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password in DB
+    await pool.query("UPDATE users SET password_hash = ? WHERE email = ?", [hashedPassword, email]);
+
+    res.json({ message: "Password reset successfully!" });
+  } catch (err) {
+    console.error("Reset password error:", err);
+    res.status(500).json({ message: "Internal Server Error", details: err.message });
   }
 });
 

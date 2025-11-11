@@ -29,6 +29,9 @@
       "edgeToEdgeEnabled": false,
       "predictiveBackGestureEnabled": false
     },
+    "extra": {
+      "googlePlacesKey": "process.env.GOOGLE_PLACES_KEY"
+    },
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"
