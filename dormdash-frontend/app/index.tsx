@@ -62,7 +62,7 @@ export default function Index() {
       <PasswordInput onPassChange={setPassHash} />
       <Text>
         Forgot password? Click{" "}
-        <Link href={{ pathname: "/forgot-password", params: { email } }}>here</Link>
+        <Link href={{ pathname: "/forgotPassword", params: { email } }}>here</Link>
       </Text>
       <View style={{ display: "flex", flexDirection: "row" }}>
         <Button style={loginStyle.button} onPress={handleLogin}>
