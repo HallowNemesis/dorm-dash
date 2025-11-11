@@ -46,7 +46,6 @@ const customStyles = {
   } as const;
 
 export default function SearchBox({ onSearchChange, defaultValue = "", onPlaceSelect, }: Props) {
-  console.log("Google Places Key:", Constants.expoConfig?.extra?.googlePlacesKey);
 
   const apiKey =
     Constants.expoConfig?.extra?.googlePlacesKey ||

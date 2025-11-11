@@ -71,6 +71,7 @@ router.post('/token-auth', async (req, res) => {
 // LOGIN
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
+  console.log("Login request:", req.body);
 
   try {
     const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
@@ -88,12 +89,12 @@ router.post('/login', async (req, res) => {
   }
 });
 
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password-request', async (req, res) => {
   try {
-    const { email, newPassword } = req.body;
+    const { email } = req.body;
 
-    if (!email || !newPassword) {
-      return res.status(400).json({ error: "Email and new password are required." });
+    if (!email) {
+      return res.status(400).json({ error: "Email is required." });
     }
 
     //Check if user exists
@@ -102,16 +103,64 @@ router.post('/reset-password', async (req, res) => {
       return res.status(404).json({ message: "No account found with that email." });
     }
 
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update password in DB
-    await pool.query("UPDATE users SET password_hash = ? WHERE email = ?", [hashedPassword, email]);
+    // token for password reset with duration
+    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "15m" });
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}&email=${email}`;
+   
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+    });
+    
+    await transporter.sendMail({
+      from: `"DormDash Support" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Password Reset Request",
+      html: `
+        <p>Hello,</p>
+        <p>You requested a password reset. Click the link below to reset your password.</p>
+        <p><a href="${resetLink}">${resetLink}</a></p>
+        <p>This link will expire in 15 minutes.</p>
+        <p>If you didn’t request this, please ignore this email.</p>
+      `,
+    });
 
     res.json({ message: "Password reset successfully!" });
   } catch (err) {
     console.error("Reset password error:", err);
     res.status(500).json({ message: "Internal Server Error", details: err.message });
+  }
+});
+
+router.post("/reset-password-confirm", async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword)
+      return res.status(400).json({ message: "Token and new password are required." });
+
+    // Verify token (throws if invalid/expired)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const email = decoded.email;
+
+    // Hash and update password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await pool.query("UPDATE users SET password_hash = ? WHERE email = ?", [
+      hashedPassword,
+      email,
+    ]);
+
+    res.json({ message: "Password reset successfully." });
+  } catch (err) {
+    console.error("Reset password confirm error:", err);
+
+    if (err.name === "TokenExpiredError") {
+      return res.status(400).json({ message: "Reset link has expired." });
+    }
+    if (err.name === "JsonWebTokenError") {
+      return res.status(400).json({ message: "Invalid reset token." });
+    }
+
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 

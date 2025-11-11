@@ -106,7 +106,7 @@ export async function CreateAcc(
 export async function ResetPassword(email: string, onOk: () => void, onFail: (msg: string) => void) {
   try {
     const { response, data } = await PostToAPI({
-      path: "reset-password",
+      path: "reset-password-request",
       body: { email },
       onOK: (res, data) => onOk(),
       onFail: (res, data) => onFail(data.message || "Failed to send reset link"),
@@ -120,3 +120,25 @@ export async function ResetPassword(email: string, onOk: () => void, onFail: (ms
   }
 }
 
+export async function ConfirmResetPassword(
+  token: string,
+  newPassword: string,
+  onOk: () => void,
+  onFail: (msg: string) => void
+) {
+  try {
+    const { response, data } = await PostToAPI({
+      path: "reset-password-confirm",
+      body: { token, newPassword },
+      onOK: (res, data) => onOk(),
+      onFail: (res, data) =>
+        onFail(data?.message || "Failed to reset password"),
+    });
+
+    return { message: data.message, ok: response.ok };
+  } catch (error) {
+    Alert.alert("Error", "An error occurred while confirming password reset");
+    console.error("Confirm Password Reset Error:", error);
+    return { message: "Fatal error", ok: false };
+  }
+}
