@@ -3,12 +3,12 @@ import { View, Text, Pressable, StyleSheet, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import MapView from "react-native-maps";
 import * as Location from "expo-location";
-import SearchBox from "./components/SearchBox";
-import { Logout } from "../utils/auth";
 
+import SearchBox from "./components/SearchBox";
 import RidePage from "./components/RidePage";
-import ChatPage from "./components/ChatPage";
+import ChatPage from "./components/ChatPage"; // assuming exists
 import ProfilePage from "./components/ProfilePage";
+import { Logout } from "../utils/auth";
 
 export default function MainView() {
   const router = useRouter();
@@ -95,7 +95,7 @@ export default function MainView() {
           </View>
         );
       case "ride":
-        return <RidePage location={location} />;
+        return <RidePage location={location ?? undefined} />;
       case "chat":
         return <ChatPage />;
       case "profile":

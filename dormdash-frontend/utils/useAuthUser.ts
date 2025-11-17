@@ -1,44 +1,86 @@
+// utils/useAuthUser.ts
 import { useEffect, useState } from "react";
 import * as SecureStore from "expo-secure-store";
-import jwt_decode from "jwt-decode";
 
-type DecodedToken = {
-  id: number;
-  email: string;
-  role?: "rider" | "driver";
-  exp?: number;
+const API_BASE =
+  process.env.EXPO_PUBLIC_API_BASE ??
+  "https://dawn-youthful-disrespectfully.ngrok-free.dev/api";
+
+type Role = "rider" | "driver";
+
+type UserState = {
+  userId: number | null;
+  email: string | null;
+  role: Role | null;
+  loading: boolean;
 };
 
-export function useAuthUser() {
-  const [userId, setUserId] = useState<number | null>(null);
-  const [email, setEmail] = useState<string | null>(null);
-  const [role, setRole] = useState<"rider" | "driver" | null>(null);
-  const [loading, setLoading] = useState(true);
+function decodeJwt(token: string): { id?: number; email?: string } {
+  try {
+    const [, payload] = token.split(".");
+    const decoded = JSON.parse(
+      Buffer.from(payload, "base64").toString("utf8")
+    );
+    return decoded;
+  } catch {
+    return {};
+  }
+}
+
+export function useAuthUser(): UserState {
+  const [state, setState] = useState<UserState>({
+    userId: null,
+    email: null,
+    role: null,
+    loading: true,
+  });
 
   useEffect(() => {
-    async function loadToken() {
-      const token = await SecureStore.getItemAsync("token");
-      if (!token) {
-        setLoading(false);
-        return;
-      }
+    let isMounted = true;
 
+    async function load() {
       try {
-        const decoded: DecodedToken = jwt_decode(token);
+        const token = await SecureStore.getItemAsync("token");
+        if (!token) {
+          if (isMounted)
+            setState({ userId: null, email: null, role: null, loading: false });
+          return;
+        }
 
-        setUserId(decoded.id);
-        setEmail(decoded.email);
-        setRole(decoded.role ?? "rider");
+        const decoded = decodeJwt(token);
+        const userId = decoded.id ?? null;
+        const email = decoded.email ?? null;
+
+        // fetch profile to get role
+        const response = await fetch(`${API_BASE}/profile/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        let role: Role | null = null;
+        if (response.ok) {
+          const profile = await response.json();
+          role = profile.role as Role;
+        }
+
+        if (isMounted) {
+          setState({ userId, email, role, loading: false });
+        }
       } catch (err) {
-        console.log("Invalid token:", err);
-        await SecureStore.deleteItemAsync("token");
+        console.error("useAuthUser error:", err);
+        if (isMounted) {
+          setState({ userId: null, email: null, role: null, loading: false });
+        }
       }
-
-      setLoading(false);
     }
 
-    loadToken();
+    load();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  return { userId, email, role, loading };
+  return state;
 }

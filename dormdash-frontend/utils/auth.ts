@@ -1,29 +1,62 @@
 import * as SecureStore from "expo-secure-store";
 import { Alert } from "react-native";
+
 const API_BASE =
-  "https://dawn-youthful-disrespectfully.ngrok-free.dev/api/auth";
+  process.env.EXPO_PUBLIC_API_BASE ??
+  "https://dawn-youthful-disrespectfully.ngrok-free.dev/api";
+
 type APIProps = {
   path: string;
   body?: any;
+  method?: "GET" | "POST";
+  auth?: boolean;
   onOK?: (response: Response, data: any) => void;
   onFail?: (response: Response, data: any) => void;
 };
+
+async function getAuthHeaderIfNeeded(auth?: boolean) {
+  if (!auth) return {};
+  const token = await SecureStore.getItemAsync("token");
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
+}
+
 export async function PostToAPI(apiProps: APIProps) {
-  const response = await fetch(`${API_BASE}/${apiProps.path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(apiProps.body),
-  });
-  const data = await response.json();
-  if (response.ok) {
-    if (apiProps.onOK != null) apiProps.onOK(response, data);
-  } else {
-    if (apiProps.onFail != null) {
-      apiProps.onFail(response, data);
-    }
+  const { path, body, method = "POST", auth = false } = apiProps;
+  const extraHeaders = await getAuthHeaderIfNeeded(auth);
+
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(extraHeaders as Record<string, string>),
+  };
+
+  const options: RequestInit = {
+    method,
+    headers,
+  };
+
+  if (method === "POST") {
+    options.body = JSON.stringify(body ?? {});
   }
+
+  const response = await fetch(`${API_BASE}/${path}`, options);
+
+  let data: any = {};
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+
+  if (response.ok) {
+    apiProps.onOK && apiProps.onOK(response, data);
+  } else {
+    apiProps.onFail && apiProps.onFail(response, data);
+  }
+
   return { response, data };
 }
+
 export async function TokenAuth(
   onOk: () => void,
   onFail?: (message: string) => void
@@ -34,16 +67,16 @@ export async function TokenAuth(
       return { message: "No token", ok: false };
     }
     const { response, data } = await PostToAPI({
-      path: "token-auth",
+      path: "auth/token-auth",
       body: { token: token },
-      onOK: (response, data) => onOk(),
-      onFail: (response, data) => (onFail ? data.message : () => {}),
+      onOK: () => onOk(),
+      onFail: (_, d) => onFail && onFail(d.message ?? "Token invalid"),
     });
 
     return { message: data.message, ok: response.ok };
   } catch (error) {
     Alert.alert("Error", "An error occurred during login");
-    console.error("Login Error:", error);
+    console.error("TokenAuth  Error:", error);
     return { message: "Fatal error", ok: false };
   }
 }
@@ -55,14 +88,14 @@ export async function Login(
 ) {
   try {
     const { response, data } = await PostToAPI({
-      path: "login",
+      path: "auth/login",
       body: { email, password: password },
-      onOK: (response, data) => {
+      onOK: (_, d) => {
+        SecureStore.setItem("token", d.token);
         onOk();
-        SecureStore.setItem("token", data.token);
       },
-      onFail: (response, data) => {
-        onFail(data.message);
+      onFail: (_, d) => {
+        onFail(d.message ?? "Login failed");
       },
     });
     return { message: data.message, ok: response.ok };
@@ -76,6 +109,7 @@ export async function Logout(onLoggedOut: () => void) {
   await SecureStore.deleteItemAsync("token");
   onLoggedOut();
 }
+
 export async function CreateAcc(
   name: string,
   email: string,
@@ -85,17 +119,17 @@ export async function CreateAcc(
 ) {
   try {
     const { response, data } = await PostToAPI({
-      path: "signup",
+      path: "auth/signup",
       body: { name, email, password: password },
-      onOK: (response, data) => {
+      onOK: (_, d) => {
+        SecureStore.setItem("token", d.token);
         onOk();
-        SecureStore.setItem("token", data.token);
       },
-      onFail: (response, data) => {
-        onFail(data.message);
+      onFail: (_, d) => {
+        onFail(d.error ?? d.message ?? "Sign up failed");
       },
     });
-    return { message: data.message, ok: response.ok };
+    return { message: data.message ?? data.error, ok: response.ok };
   } catch (error) {
     Alert.alert("Error", "An error occurred during sign up");
     console.error("Sign Up Error:", error);
@@ -103,13 +137,18 @@ export async function CreateAcc(
   }
 }
 
-export async function ResetPassword(email: string, onOk: () => void, onFail: (msg: string) => void) {
+export async function ResetPassword(
+  email: string,
+  onOk: () => void,
+  onFail: (msg: string) => void
+) {
   try {
     const { response, data } = await PostToAPI({
-      path: "reset-password-request",
+      path: "auth/reset-password-request",
       body: { email },
-      onOK: (res, data) => onOk(),
-      onFail: (res, data) => onFail(data.message || "Failed to send reset link"),
+      onOK: () => onOk(),
+      onFail: (_, d) =>
+        onFail(d.message ?? d.error ?? "Failed to send reset link"),
     });
 
     return { message: data.message, ok: response.ok };
@@ -128,11 +167,10 @@ export async function ConfirmResetPassword(
 ) {
   try {
     const { response, data } = await PostToAPI({
-      path: "reset-password-confirm",
+      path: "auth/reset-password-confirm",
       body: { token, newPassword },
-      onOK: (res, data) => onOk(),
-      onFail: (res, data) =>
-        onFail(data?.message || "Failed to reset password"),
+      onOK: () => onOk(),
+      onFail: (_, d) => onFail(d.message ?? "Failed to reset password"),
     });
 
     return { message: data.message, ok: response.ok };
@@ -141,4 +179,37 @@ export async function ConfirmResetPassword(
     console.error("Confirm Password Reset Error:", error);
     return { message: "Fatal error", ok: false };
   }
+}
+
+export async function getProfile() {
+  const { response, data } = await PostToAPI({
+    path: "profile/me",
+    method: "GET",
+    auth: true,
+  });
+
+  return { ok: response.ok, data };
+}
+
+export async function updateProfile(
+  profile: {
+    full_name: string;
+    phone?: string;
+    bio?: string;
+    avatar_url?: string | null;
+    role: "rider" | "driver";
+  },
+  onOk: () => void,
+  onFail: (msg: string) => void
+) {
+  const { response, data } = await PostToAPI({
+    path: "profile/me",
+    method: "POST",
+    auth: true,
+    body: profile,
+    onOK: () => onOk(),
+    onFail: (_, d) => onFail(d.message ?? "Failed to update profile"),
+  });
+
+  return { ok: response.ok, data };
 }

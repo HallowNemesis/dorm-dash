@@ -12,7 +12,7 @@ function auth(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // contains id + email
+    req.user = decoded; // { id, email }
     next();
   } catch (err) {
     return res.status(401).json({ message: "Invalid or expired token" });
@@ -21,8 +21,8 @@ function auth(req, res, next) {
 
 
 // GET /api/profile/me
-router.get('/me', async (req, res) => {
- try {
+router.get("/me", auth, async (req, res) => {
+  try {
     const userId = req.user.id;
 
     const [rows] = await pool.query(
@@ -37,7 +37,6 @@ router.get('/me', async (req, res) => {
 
     let profile = rows[0];
 
-    // If user is a driver, load driver profile fields too
     if (profile.role === "driver") {
       const [driverRows] = await pool.query(
         `SELECT vehicle_make, vehicle_model, vehicle_plate, seats, license_number
@@ -57,9 +56,9 @@ router.get('/me', async (req, res) => {
   }
 });
 
-// POST /api/profile/me
-router.post('/me', async (req, res) => {
-const {
+// POST /api/profile/me (update profile)
+router.post("/me", auth, async (req, res) => {
+  const {
     full_name,
     phone,
     bio,
@@ -74,25 +73,13 @@ const {
 
   const userId = req.user.id;
 
-
-  const profileData = {
-    fullName: fullName || '',
-    phone: phone || '',
-    role: role || 'rider',
-    carMake: carMake || '',
-    carModel: carModel || '',
-    carColor: carColor || '',
-  };
-try {
-    // Update users table
+  try {
     await pool.query(
-      `UPDATE users
-       SET full_name=?, phone=?, bio=?, avatar_url=?, role=?
+      `UPDATE users SET full_name=?, phone=?, bio=?, avatar_url=?, role=?
        WHERE id=?`,
       [full_name, phone, bio, avatar_url, role, userId]
     );
 
-    // If user selected driver role — update driver_profiles
     if (role === "driver") {
       await pool.query(
         `INSERT INTO driver_profiles
@@ -123,7 +110,7 @@ try {
 });
 
 // DELETE /api/profile/me
-router.delete('/me', async (req, res) => {
+router.delete("/me", auth, async (req, res) => {
   const userId = req.user.id;
 
   try {

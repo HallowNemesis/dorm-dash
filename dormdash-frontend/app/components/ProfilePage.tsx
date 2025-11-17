@@ -1,17 +1,39 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, TextInput, Button, StyleSheet, Alert, Image, Pressable } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { getProfile, updateProfile } from "../../utils/auth";
+import { useAuthUser } from "../../utils/useAuthUser";
+
+
+type Role = "rider" | "driver";
 
 type ProfilePageProps = {
   // optionally,  pass user data as props
 };
 
 export default function ProfilePage({}: ProfilePageProps) {
+  const { loading } = useAuthUser();
+
+
   const [fullName, setFullName] = useState("");
+  const [bio, setBio] = useState("");
+  const [role, setRole] = useState<Role>("rider");
+
   const [email, setEmail] = useState("");
-  const [description, setDescription] = useState("");
-  const [role, setRole] = useState<"rider" | "driver">("rider");
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+useEffect(() => {
+    async function load() {
+      const { ok, data } = await getProfile();
+      if (!ok || !data) return;
+      setFullName(data.full_name ?? "");
+      setBio(data.bio ?? "");
+      setRole((data.role as Role) ?? "rider");
+      setProfileImage(data.avatar_url ?? null);
+    }
+    load();
+  }, []);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -26,13 +48,36 @@ export default function ProfilePage({}: ProfilePageProps) {
     }
   };
 
-  const handleSave = () => {
-    // TODO: send profile data to backend
-    Alert.alert(
-      "Profile Saved",
-      `Name: ${fullName}\nEmail: ${email}\nRole: ${role}\nDescription: ${description}`
-    );
+  const handleSave = async () => {
+    if (!fullName.trim()) {
+      Alert.alert("Error", "Name is required.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await updateProfile(
+        {
+          full_name: fullName,
+          bio,
+          avatar_url: profileImage,
+          role,
+        },
+        () => Alert.alert("Profile Saved", "Your profile has been updated."),
+        (msg) => Alert.alert("Save Failed", msg)
+      );
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text>Loading profile...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -62,11 +107,11 @@ export default function ProfilePage({}: ProfilePageProps) {
         style={styles.input}
         keyboardType="email-address"
       />
-
+  
       <TextInput
         placeholder="Short Description"
-        value={description}
-        onChangeText={setDescription}
+        value={bio}
+        onChangeText={setBio}
         style={[styles.input, { height: 80 }]}
         multiline
       />

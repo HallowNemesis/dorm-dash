@@ -6,10 +6,8 @@ import { useAuthUser } from "../../utils/useAuthUser";
 
 export default function DriverModePage() {
   const { userId, role, loading } = useAuthUser();
-
   const [isOnline, setIsOnline] = useState(false);
   const [location, setLocation] = useState<any>(null);
-
   const locationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {

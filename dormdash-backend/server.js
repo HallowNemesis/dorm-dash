@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
 import profileRoutes from './routes/profile.js';   // new import
 import rideRoutes from './routes/ride.js';
-import { registerRideSocketHandlers } from './sockets/rideSockets.js';
+import { registerRideSocketHandlers } from './sockets/rideSocket.js';
 dotenv.config();
 
 const app = express();

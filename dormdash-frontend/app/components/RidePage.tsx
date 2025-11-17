@@ -3,20 +3,25 @@ import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
 import { LocationObject } from "expo-location";
 import { getSocket } from "../../utils/socket";
 import { useAuthUser } from "../../utils/useAuthUser";
-import { useRouter } from "expo-router";
 import DriverModePage from "../components/DriverModePage";
 
 type RidePageProps = {
   location?: LocationObject | null;
 };
 
+type Destination = {
+  lat: number;
+  lng: number;
+  name: string;
+} | null;
+
 export default function RidePage({ location }: RidePageProps) {
-  const router = useRouter();
   const { userId, role, loading } = useAuthUser();
 
   const [pickup, setPickup] = useState("");
   const [destination, setDestination] = useState("");
   const [driverMode, setDriverMode] = useState(false);
+  const [selectedDest, setSelectedDest] = useState<Destination>(null);
 
   // Register rider and listen for ride events
   useEffect(() => {
@@ -48,6 +53,11 @@ export default function RidePage({ location }: RidePageProps) {
     };
   }, [loading, userId, driverMode]);
 
+    const handlePlaceSelect = (place: { lat: number; lng: number; name: string }) => {
+    setSelectedDest(place);
+    setDestination(place.name);
+  };
+
   const handleRequestRide = () => {
     if (loading) return;
     if (!userId) {
@@ -62,6 +72,10 @@ export default function RidePage({ location }: RidePageProps) {
       Alert.alert("Error", "GPS not available.");
       return;
     }
+    if (!selectedDest) {
+      Alert.alert("Error", "Please select a destination from the search box.");
+      return;
+    }
 
     const socket = getSocket();
 
@@ -69,8 +83,8 @@ export default function RidePage({ location }: RidePageProps) {
       riderId: userId,
       pickup_lat: location.coords.latitude,
       pickup_lng: location.coords.longitude,
-      dest_lat: location.coords.latitude + 0.001, // TEMP
-      dest_lng: location.coords.longitude + 0.001, // TEMP
+      dest_lat: selectedDest.lat,
+      dest_lng: selectedDest.lng,
     });
 
     Alert.alert("Ride Requested", destination);
@@ -84,7 +98,7 @@ export default function RidePage({ location }: RidePageProps) {
     );
   }
 
-  if (driverMode) {
+  if (driverMode && role === "driver") {
     return (
       <View style={{ flex: 1 }}>
         <Button
