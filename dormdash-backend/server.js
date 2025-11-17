@@ -16,7 +16,7 @@ app.use(express.json());
 
 // REST API routes
 app.use('/api/auth', authRoutes);
-app.use('/api/profile', profileRoutes);            // mount profile routes
+app.use('/api/profile', profileRoutes);
 app.use('/api/ride', rideRoutes);
 
 // test route
