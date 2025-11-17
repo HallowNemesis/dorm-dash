@@ -58,7 +58,7 @@ router.get('/me', async (req, res) => {
 });
 
 // POST /api/profile/me
-router.post('/me', (req, res) => {
+router.post('/me', async (req, res) => {
 const {
     full_name,
     phone,
