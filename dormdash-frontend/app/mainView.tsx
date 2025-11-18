@@ -6,15 +6,17 @@ import * as Location from "expo-location";
 
 import SearchBox from "./components/SearchBox";
 import RidePage from "./components/RidePage";
-import ChatPage from "./components/ChatPage"; // assuming exists
+import ChatPage from "./components/ChatPage";
 import ProfilePage from "./components/ProfilePage";
 import { Logout } from "../utils/auth";
 
 export default function MainView() {
   const router = useRouter();
-  const [location, setLocation] = useState<Location.LocationObject | null>(
-    null
-  );
+  const [location, setLocation] = useState<Location.LocationObject | null>(null);
+
+  // 👇 NEW: track which ride is currently active (after driver & rider accept)
+  const [activeRideId, setActiveRideId] = useState<number | null>(null);
+
   const [activeTab, setActiveTab] = useState<
     "home" | "ride" | "chat" | "profile"
   >("home");
@@ -56,7 +58,12 @@ export default function MainView() {
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
       }
-    : { latitude: 0, longitude: 0, latitudeDelta: 0.01, longitudeDelta: 0.01 };
+    : {
+        latitude: 0,
+        longitude: 0,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
 
   const handlePlaceSelect = (place: {
     lat: number;
@@ -94,12 +101,25 @@ export default function MainView() {
             />
           </View>
         );
+
       case "ride":
-        return <RidePage location={location ?? undefined} />;
+        // 👇 Pass callback so RidePage can tell us when a ride becomes active
+        return (
+          <RidePage
+            location={location ?? undefined}
+            setActiveRideId={setActiveRideId}
+          />
+        );
+
       case "chat":
-        return <ChatPage />;
+        // 👇 ChatPage will only enable chat when rideId is not null
+        return <ChatPage rideId={activeRideId} />;
+
+        
+
       case "profile":
         return <ProfilePage />;
+
       default:
         return null;
     }
@@ -124,6 +144,7 @@ export default function MainView() {
             Home
           </Text>
         </Pressable>
+
         <Pressable
           onPress={() => setActiveTab("ride")}
           style={styles.navButton}
@@ -136,6 +157,7 @@ export default function MainView() {
             Ride
           </Text>
         </Pressable>
+
         <Pressable
           onPress={() => setActiveTab("chat")}
           style={styles.navButton}
@@ -148,6 +170,7 @@ export default function MainView() {
             Chat
           </Text>
         </Pressable>
+
         <Pressable
           onPress={() => setActiveTab("profile")}
           style={styles.navButton}
@@ -160,6 +183,7 @@ export default function MainView() {
             Profile
           </Text>
         </Pressable>
+
         <Pressable
           onPress={() =>
             Alert.alert("Sign Out", "Are you sure you want to sign out?", [

@@ -1,48 +1,73 @@
-import { useEffect, useState } from "react";
-import { View, Text, TextInput, Button, FlatList, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
-import { io, Socket } from "socket.io-client";
-
-// Replace with your backend ngrok or local URL
-const API_BASE = "https://dawn-youthful-disrespectfully.ngrok-free.dev/api/auth";
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  FlatList,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { getSocket } from "../../utils/socket"; // <-- Use shared socket
 
 type Message = {
   id: string;
   text: string;
-  sender: string; // "rider" or "driver"
+  sender: string; // rider or driver
+  rideId: number;
 };
 
-export default function ChatPage() {
-  const [socket, setSocket] = useState<Socket | null>(null);
+type ChatPageProps = {
+  rideId: number | null;
+};
+
+export default function ChatPage({ rideId }: ChatPageProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageText, setMessageText] = useState("");
 
+  // If no active ride, show locked screen
+  if (!rideId) {
+    return (
+      <View style={styles.lockedContainer}>
+        <Text style={styles.lockedTitle}>Chat Unavailable</Text>
+        <Text style={styles.lockedSubtitle}>
+          Chat becomes available once a ride is accepted.
+        </Text>
+      </View>
+    );
+  }
+
   useEffect(() => {
-    const newSocket = io(API_BASE, {
-      transports: ["websocket"],
-    });
+    const socket = getSocket();
+    if (!socket.connected) socket.connect();
 
-    setSocket(newSocket);
-
-    // Listen for incoming chat messages
-    newSocket.on("newChatMessage", (msg: Message) => {
-      setMessages((prev) => [...prev, msg]);
+    // Listen for messages for THIS ride only
+    socket.on("newChatMessage", (msg: Message) => {
+      if (msg.rideId === rideId) {
+        setMessages((prev) => [...prev, msg]);
+      }
     });
 
     return () => {
-      newSocket.disconnect();
+      socket.off("newChatMessage");
+      setMessages([]);
     };
-  }, []);
+  }, [rideId]);
 
   const handleSendMessage = () => {
     if (!messageText.trim()) return;
 
+    const socket = getSocket();
+
     const msg: Message = {
       id: Math.random().toString(),
       text: messageText,
-      sender: "rider", // TODO: set dynamically based on current user role
+      sender: "rider", // update later when you detect driver/rider
+      rideId,
     };
 
-    socket?.emit("chatMessage", msg);
+    socket.emit("chatMessage", msg);
     setMessages((prev) => [...prev, msg]);
     setMessageText("");
   };
@@ -56,7 +81,12 @@ export default function ChatPage() {
         data={messages}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={[styles.messageBubble, item.sender === "rider" ? styles.riderBubble : styles.driverBubble]}>
+          <View
+            style={[
+              styles.messageBubble,
+              item.sender === "rider" ? styles.riderBubble : styles.driverBubble,
+            ]}
+          >
             <Text style={styles.messageText}>{item.text}</Text>
           </View>
         )}
@@ -111,5 +141,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 8,
     marginRight: 10,
+  },
+  lockedContainer: {
+    flex: 1,
+    backgroundColor: "#111",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  lockedTitle: {
+    fontSize: 22,
+    color: "#ffffff",
+    marginBottom: 10,
+    fontWeight: "600",
+  },
+  lockedSubtitle: {
+    fontSize: 16,
+    color: "#cccccc",
+    textAlign: "center",
   },
 });

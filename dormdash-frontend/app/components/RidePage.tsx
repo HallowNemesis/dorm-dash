@@ -13,11 +13,10 @@ import { useAuthUser } from "../../utils/useAuthUser";
 import DriverModePage from "../components/DriverModePage";
 import SearchBox from "../components/SearchBox";
 
-
 type RidePageProps = {
   location?: LocationObject | null;
+  setActiveRideId: (id: number | null) => void; // NEW
 };
-
 
 type Place = {
   lat: number;
@@ -25,21 +24,17 @@ type Place = {
   name: string;
 };
 
-export default function RidePage({ location }: RidePageProps) {
+export default function RidePage({ location, setActiveRideId }: RidePageProps) {
   const { userId, role, loading } = useAuthUser();
 
   const [driverMode, setDriverMode] = useState(false);
 
   const [useCurrentPickup, setUseCurrentPickup] = useState(true);
   const [pickupText, setPickupText] = useState("Current Location");
-  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
+  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const [destinationText, setDestinationText] = useState("");
-  const [destinationCoords, setDestinationCoords] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
+  const [destinationCoords, setDestinationCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     if (location && useCurrentPickup) {
@@ -51,47 +46,30 @@ export default function RidePage({ location }: RidePageProps) {
     }
   }, [location, useCurrentPickup]);
 
-  // Register rider & listen for ride events
+  // Rider listener + clear active ride on load
   useEffect(() => {
-    if (driverMode) return; // only for riders
-    if (loading) return;
-    if (!userId) return;
+    if (driverMode) return;
+    if (loading || !userId) return;
+
+    // rider starts with NO active ride
+    setActiveRideId(null);
 
     const socket = getSocket();
     if (!socket.connected) socket.connect();
 
-    socket.emit("registerUser", {
-      userId,
-      role: "rider",
-    });
+    socket.emit("registerUser", { userId, role: "rider" });
 
-    socket.on("connect", () => {
-      socket.emit("registerUser", {
-        userId,
-        role: "rider",
-      });
-    });
-
-    socket.on("matchFound", (data) => {
-      Alert.alert("Driver Found!", `Ride ID: ${data.rideId}`);
-    });
-
-    socket.on("noDriversAvailable", () => {
-      Alert.alert("No drivers available right now.");
-    });
-
+    // For rider: Ride accepted by driver
     socket.on("rideAccepted", (data) => {
+      setActiveRideId(data.rideId);     // UNLOCK CHAT
       Alert.alert("Driver Accepted!", `Ride ID: ${data.rideId}`);
     });
 
     return () => {
-      socket.off("matchFound");
-      socket.off("noDriversAvailable");
       socket.off("rideAccepted");
     };
   }, [loading, userId, driverMode]);
 
-  // Google Places selection
   const handlePickupSelect = (place: Place) => {
     setPickupText(place.name);
     setPickupCoords({ lat: place.lat, lng: place.lng });
@@ -102,28 +80,13 @@ export default function RidePage({ location }: RidePageProps) {
     setDestinationCoords({ lat: place.lat, lng: place.lng });
   };
 
-  // Request a ride
   const handleRequestRide = () => {
-    if (loading) return;
-
-    if (!userId) {
-      return Alert.alert("Error", "You must be logged in.");
-    }
-
-    if (!pickupCoords) {
-      return Alert.alert("Error", "Pickup location not set.");
-    }
-
-    if (!destinationCoords) {
-      return Alert.alert(
-        "Destination Required",
-        "Please select a destination from the suggestions list."
-      );
-    }
-
+    if (!userId) return Alert.alert("Error", "You must be logged in.");
+    if (!pickupCoords) return Alert.alert("Error", "Pickup location not set.");
+    if (!destinationCoords)
+      return Alert.alert("Error", "Please select a destination.");
 
     const socket = getSocket();
-
     socket.emit("requestRide", {
       riderId: userId,
       pickup_lat: pickupCoords.lat,
@@ -145,14 +108,9 @@ export default function RidePage({ location }: RidePageProps) {
 
   if (driverMode && role === "driver") {
     return (
-      <View style={{ flex: 1 }}>
-        <Button
-          title="Switch to Rider Mode"
-          onPress={() => setDriverMode(false)}
-          color="#888"
-        />
-        <DriverModePage />
-      </View>
+      <DriverModePage
+        setActiveRideId={setActiveRideId}   // 🔥 PASS DOWN
+      />
     );
   }
 
@@ -160,7 +118,6 @@ export default function RidePage({ location }: RidePageProps) {
     <View style={styles.container}>
       <Text style={styles.title}>Request a Ride</Text>
 
-      {/* Driver Mode Toggle */}
       {role === "driver" && (
         <View style={{ marginBottom: 20 }}>
           <Button
@@ -171,29 +128,23 @@ export default function RidePage({ location }: RidePageProps) {
         </View>
       )}
 
-      {/* Pickup + auto-filled */}
       <View style={styles.row}>
         <Text style={styles.label}>Use Current Location</Text>
-        <Switch
-          value={useCurrentPickup}
-          onValueChange={(t) => setUseCurrentPickup(t)}
-        />
+        <Switch value={useCurrentPickup} onValueChange={setUseCurrentPickup} />
       </View>
 
-      {/* Pickup + auto-filled  */}
       <SearchBox
         defaultValue={useCurrentPickup ? "Current Location" : pickupText}
         disabled={useCurrentPickup}
         onPlaceSelect={handlePickupSelect}
       />
 
-      {/* DESTINATION */}
       <Text style={styles.label}>Destination</Text>
       <SearchBox
         defaultValue={destinationText}
         onSearchChange={(text) => {
           setDestinationText(text);
-          setDestinationCoords(null); // <-- Prevents stale coordinates
+          setDestinationCoords(null);
         }}
         onPlaceSelect={handleDestinationSelect}
       />
@@ -203,34 +154,9 @@ export default function RidePage({ location }: RidePageProps) {
   );
 }
 
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    justifyContent: "flex-start",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "600",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 5,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 15,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-    alignItems: "center",
-  },
+  container: { flex: 1, padding: 20 },
+  title: { textAlign: "center", fontSize: 24, marginBottom: 20 },
+  label: { fontSize: 16, marginVertical: 8 },
+  row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
 });
