@@ -1,5 +1,7 @@
 import * as SecureStore from "expo-secure-store";
+import { method } from "lodash";
 import { Alert } from "react-native";
+import { getUserInfo } from "./useAuthUser";
 
 const API_BASE =
   process.env.EXPO_PUBLIC_API_BASE ??
@@ -8,7 +10,7 @@ const API_BASE =
 type APIProps = {
   path: string;
   body?: any;
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "DELETE";
   auth?: boolean;
   onOK?: (response: Response, data: any) => void;
   onFail?: (response: Response, data: any) => void;
@@ -35,7 +37,7 @@ export async function PostToAPI(apiProps: APIProps) {
     headers,
   };
 
-  if (method === "POST") {
+  if (method === "POST" || method==="DELETE") {
     options.body = JSON.stringify(body ?? {});
   }
 
@@ -213,4 +215,20 @@ export async function updateProfile(
   });
 
   return { ok: response.ok, data };
+}
+
+export async function  deleteProfile(
+  onOK:()=>void,
+  onFail:(msg: string)=>void
+) {
+  const info = getUserInfo();
+  const {response, data} = await PostToAPI({
+    path:"profile/me",
+    method:"DELETE",
+    auth:true,
+    body:{user:info},
+    onOK: ()=>onOK(),
+     onFail: (_, d) => onFail(d.message ?? "Failed to delete profile")
+})
+  return{ok:response.ok,data}
 }

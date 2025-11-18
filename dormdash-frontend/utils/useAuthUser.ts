@@ -15,8 +15,15 @@ type UserState = {
   role: Role | null;
   loading: boolean;
 };
-
-function decodeJwt(token: string): { id?: number; email?: string } {
+export function getUserInfo(){
+   const token = SecureStore.getItem("token");
+   if(!token){
+      throw "Could not get user information"
+   }
+   const decoded = decodeJwt(token)
+   return decoded;
+}
+export function decodeJwt(token: string): { id?: number; email?: string } {
   try {
     return jwtDecode(token);
   } catch {
