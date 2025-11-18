@@ -1,5 +1,5 @@
 // routes/profile.js
-import express, { json } from 'express';
+import express from 'express';
 import jwt from jsonwebtoken;
 import pool from '../db.js';
 
