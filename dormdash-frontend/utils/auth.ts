@@ -1,12 +1,9 @@
 import * as SecureStore from "expo-secure-store";
-import { method } from "lodash";
-import { Alert } from "react-native";
-import { getUserInfo } from "./useAuthUser";
+
 
 const API_BASE =
   process.env.EXPO_PUBLIC_API_BASE ??
   "https://dawn-youthful-disrespectfully.ngrok-free.dev/api";
-
 type APIProps = {
   path: string;
   body?: any;
@@ -32,12 +29,9 @@ export async function PostToAPI(apiProps: APIProps) {
     ...(extraHeaders as Record<string, string>),
   };
 
-  const options: RequestInit = {
-    method,
-    headers,
-  };
+  const options: RequestInit = { method, headers };
 
-  if (method === "POST" || method==="DELETE") {
+ if (method !== "GET" && method !== "DELETE") {
     options.body = JSON.stringify(body ?? {});
   }
 
@@ -50,11 +44,8 @@ export async function PostToAPI(apiProps: APIProps) {
     data = {};
   }
 
-  if (response.ok) {
-    apiProps.onOK && apiProps.onOK(response, data);
-  } else {
-    apiProps.onFail && apiProps.onFail(response, data);
-  }
+  if (response.ok) apiProps.onOK?.(response, data);
+  else apiProps.onFail?.(response, data);
 
   return { response, data };
 }
@@ -65,23 +56,22 @@ export async function TokenAuth(
 ) {
   try {
     const token = await SecureStore.getItemAsync("token");
-    if (token == null) {
-      return { message: "No token", ok: false };
-    }
+    if (!token) return { message: "No token", ok: false };
+
     const { response, data } = await PostToAPI({
       path: "auth/token-auth",
       body: { token },
       onOK: () => onOk(),
-      onFail: (_, d) => onFail && onFail(d.message ?? "Token invalid"),
+      onFail: (_, d) => onFail?.(d.message ?? "Token invalid"),
     });
 
     return { message: data.message, ok: response.ok };
   } catch (error) {
-    Alert.alert("Error", "An error occurred during login");
-    console.error("TokenAuth  Error:", error);
+    console.error("TokenAuth Error:", error);
     return { message: "Fatal error", ok: false };
   }
 }
+
 
 export async function Login(
   email: string,
@@ -97,17 +87,16 @@ export async function Login(
         await SecureStore.setItemAsync("token", d.token);
         onOk();
       },
-      onFail: (_, d) => {
-        onFail(d.message ?? "Login failed");
-      },
+      onFail: (_, d) => onFail(d.message ?? "Login failed"),
     });
+
     return { message: data.message, ok: response.ok };
   } catch (error) {
-    Alert.alert("Error", "An error occurred during login");
     console.error("Login Error:", error);
     return { message: "Fatal error", ok: false };
   }
 }
+
 export async function Logout(onLoggedOut: () => void) {
   await SecureStore.deleteItemAsync("token");
   onLoggedOut();
@@ -125,17 +114,15 @@ export async function CreateAcc(
       path: "auth/signup",
       body: { name, email, password },
       onOK: async (_, d) => {
-        await SecureStore.setItem("token", d.token);
+        await SecureStore.setItemAsync("token", d.token);
         onOk();
       },
-      onFail: (_, d) => {
-        onFail(d.error ?? d.message ?? "Sign up failed");
-      },
+      onFail: (_, d) => onFail(d.error ?? d.message ?? "Sign up failed"),
     });
+
     return { message: data.message ?? data.error, ok: response.ok };
   } catch (error) {
-    Alert.alert("Error", "An error occurred during sign up");
-    console.error("Sign Up Error:", error);
+    console.error("CreateAcc Error:", error);
     return { message: "Fatal error", ok: false };
   }
 }
@@ -156,7 +143,6 @@ export async function ResetPassword(
 
     return { message: data.message, ok: response.ok };
   } catch (error) {
-    Alert.alert("Error", "An error occurred while resetting password");
     console.error("Reset Password Error:", error);
     return { message: "Fatal error", ok: false };
   }
@@ -178,12 +164,10 @@ export async function ConfirmResetPassword(
 
     return { message: data.message, ok: response.ok };
   } catch (error) {
-    Alert.alert("Error", "An error occurred while confirming password reset");
     console.error("Confirm Password Reset Error:", error);
     return { message: "Fatal error", ok: false };
   }
 }
-
 export async function getProfile() {
   const { response, data } = await PostToAPI({
     path: "profile/me",
@@ -217,18 +201,17 @@ export async function updateProfile(
   return { ok: response.ok, data };
 }
 
-export async function  deleteProfile(
-  onOK:()=>void,
-  onFail:(msg: string)=>void
+export async function deleteProfile(
+  onOK: () => void,
+  onFail: (msg: string) => void
 ) {
-  const info = getUserInfo();
-  const {response, data} = await PostToAPI({
-    path:"profile/me",
-    method:"DELETE",
-    auth:true,
-    body:{user:info},
-    onOK: ()=>onOK(),
-     onFail: (_, d) => onFail(d.message ?? "Failed to delete profile")
-})
-  return{ok:response.ok,data}
+  const { response, data } = await PostToAPI({
+    path: "profile/me",
+    method: "DELETE",
+    auth: true,
+    onOK: () => onOK(),
+    onFail: (_, d) => onFail(d.message ?? "Failed to delete profile"),
+  });
+
+  return { ok: response.ok, data };
 }

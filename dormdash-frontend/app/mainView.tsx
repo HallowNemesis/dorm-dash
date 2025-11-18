@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable, StyleSheet, Alert } from "react-native";
-import { useRouter } from "expo-router";
 import MapView from "react-native-maps";
 import * as Location from "expo-location";
 
@@ -8,10 +7,8 @@ import SearchBox from "./components/SearchBox";
 import RidePage from "./components/RidePage";
 import ChatPage from "./components/ChatPage"; // assuming exists
 import ProfilePage from "./components/ProfilePage";
-import { Logout } from "../utils/auth";
 
 export default function MainView() {
-  const router = useRouter();
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null
   );
@@ -43,11 +40,7 @@ export default function MainView() {
     getCurrentLocation();
   }, []);
 
-  const handleLogout = async () => {
-    await Logout(() => {
-      router.push("/");
-    });
-  };
+
 
   const region = location
     ? {
@@ -160,17 +153,6 @@ export default function MainView() {
             Profile
           </Text>
         </Pressable>
-        <Pressable
-          onPress={() =>
-            Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-              { text: "Cancel", style: "cancel" },
-              { text: "Yes", onPress: handleLogout },
-            ])
-          }
-          style={styles.navButton}
-        >
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </Pressable>
       </View>
     </View>
   );
@@ -206,8 +188,5 @@ const styles = StyleSheet.create({
   inactiveText: {
     color: "#fff",
   },
-  signOutText: {
-    color: "#ff4d4d",
-    fontWeight: "bold",
-  },
+  
 });

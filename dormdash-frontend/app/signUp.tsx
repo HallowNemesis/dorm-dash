@@ -1,61 +1,53 @@
 import { Button } from "@react-navigation/elements";
-import { useEffect, useState } from "react";
-import { Text, View, StyleSheet, Alert } from "react-native";
-import { Link, useRouter, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
+import { Pressable, Text, View, StyleSheet, Alert, TextInput } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import EmailInput from "./components/emailInput";
 import PasswordInput from "./components/passwordInput";
-import { Login, TokenAuth } from "../utils/auth";
-import GuestView from "./components/guestView";
+import inputStyle from "./components/input-style";
+import { CreateAcc } from "../utils/auth";
+
 
 const loginStyle = StyleSheet.create({
   title: {
     fontSize: 50,
     fontWeight: "100",
   },
-  button: {
-    margin: 10,
-  },
 });
 
-export default function Index() {
+export default function SignUp() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [passHash, setPassHash] = useState("");
-  const [isLoginView, setIsLoginView] = useState(false);
+  const [confirmPassHash, setConfirmPassHash] = useState("");
   const router = useRouter();
   const local = useLocalSearchParams();
 
-  // Auto-login check: run ONLY once when component mounts
-  useEffect(() => {
-    async function tryLogin() {
-      await TokenAuth(() => {
-        router.push({ pathname: "/mainView" });
-      });
-    }
-
-    tryLogin();
-  }, [router]);
-
-  const handleLogin = async () => {
-    if (!email || !passHash) {
-      Alert.alert("Error", "Please enter both email and password");
+  const handleSignUp = async () => {
+    if (!name || !email || !passHash || !confirmPassHash) {
+      Alert.alert("Error", "Please fill in all fields");
       return;
     }
-
-    await Login(
-      email,
-      passHash,
-      () => router.push({ pathname: "/mainView", params: { email } }),
-      (message?: string) =>
-        Alert.alert("Login Failed", message || "Invalid email or password")
-    );
-  };
-
-  const goToLogin = () => setIsLoginView(true);
-
-  if (!isLoginView) {
-    return <GuestView onGoToLogin={goToLogin} />;
+    const eduEmailRegex = /^[a-zA-Z0-9_]+@[a-zA-Z0-9]+\.edu$/;
+    if (!eduEmailRegex.test(email)) {
+      Alert.alert("Error", "Please use a valid .edu email address");
+      return;
+    }
+    if (passHash !== confirmPassHash) {
+      Alert.alert("Error", "Passwords do not match");
+      return;
+    }
+    await CreateAcc(name, email, passHash, () => {
+      Alert.alert("Sign Up Success", "Account created successfully");
+      router.push({ pathname: "/", params: { email } });
+    },
+      (message) => {
+        Alert.alert(
+          "Sign Up Failed",
+          message || "Unable to sign up with the provided credentials"
+        );
+      });
   }
-
   return (
     <View
       style={{
@@ -65,39 +57,34 @@ export default function Index() {
         marginBottom: "80%",
       }}
     >
-      <Text style={loginStyle.title}>Login</Text>
-
-      <EmailInput
-        defaultValue={(local.email as string) || ""}
-        onEmailChange={setEmail}
+      <Text style={loginStyle.title}>Sign Up</Text>
+      <TextInput
+        style={inputStyle().input}
+        placeholder="Full Name"
+        onChangeText={setName}
+        value={name}
       />
-
+      <EmailInput defaultValue={local.email as string} onEmailChange={setEmail} />
       <PasswordInput onPassChange={setPassHash} />
+      <PasswordInput onPassChange={setConfirmPassHash} />
+      <Pressable
+        onPress={() => router.push({ pathname: "/", params: { email } })}
+        style={{
+          backgroundColor: "#ff6b6bff",
+          paddingVertical: 5,
+          paddingHorizontal: 15,
+          borderRadius: 999, // fully rounded
+          marginTop: 20,
+          marginBottom: 10,
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+          Take me Back
+        </Text>
+      </Pressable>
 
-      <Text>
-        Forgot password? Click{" "}
-        <Link href={{ pathname: "/forgotPassword", params: { email } }}>
-          here
-        </Link>
-      </Text>
-
-      <View style={{ flexDirection: "row" }}>
-        <Button style={loginStyle.button} onPress={handleLogin}>
-          Login
-        </Button>
-        <Button
-          style={loginStyle.button}
-          onPress={() =>
-            router.push({ pathname: "/signUp", params: { email } })
-          }
-        >
-          Sign up
-        </Button>
-      </View>
-
-      <Button style={{ marginTop: 20 }} onPress={() => setIsLoginView(false)}>
-        Back to Preview
-      </Button>
+      <Button onPress={handleSignUp}>Sign Up</Button>
     </View>
   );
 }

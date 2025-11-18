@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useRouter } from "expo-router";
 import {
   View,
   Text,
@@ -10,8 +11,9 @@ import {
   Pressable,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { getProfile, updateProfile } from "../../utils/auth";
+import { getProfile, updateProfile, deleteProfile, Logout } from "../../utils/auth";
 import { useAuthUser } from "../../utils/useAuthUser";
+
 
 type Role = "rider" | "driver";
 
@@ -19,7 +21,9 @@ type ProfilePageProps = {
   // optionally,  pass user data as props
 };
 
-export default function ProfilePage({}: ProfilePageProps) {
+export default function ProfilePage({ }: ProfilePageProps) {
+  const router = useRouter();
+
   const { loading } = useAuthUser();
 
   const [fullName, setFullName] = useState("");
@@ -153,8 +157,71 @@ export default function ProfilePage({}: ProfilePageProps) {
         onPress={handleSave}
         disabled={saving}
       />
+      <View style={{ marginTop: 20 }}>
+
+        <View style={{ marginBottom: 20 }}>
+          <Button
+            title="Logout"
+            color="#777"
+            onPress={() => {
+              Alert.alert(
+                "Logout",
+                "Are you sure you want to log out?",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Logout",
+                    style: "destructive",
+                    onPress: async () => {
+                      await Logout(() => {
+                        router.replace("/signUp");
+                      });
+                    },
+                  },
+                ]
+              );
+            }}
+          />
+        </View>
+
+        <View style={{ marginTop: 30, width: 150, height: 30, alignSelf: "center" }}>
+          {/* Delete Account Button */}
+          <Button
+            title="Delete Account"
+            color="#d9534f"
+            onPress={() => {
+              Alert.alert(
+                "Delete Account",
+                "Are you sure you want to permanently delete your account? This cannot be undone.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: () => {
+                      deleteProfile(
+                        async () => {
+                          Alert.alert("Account Deleted", "Your account has been removed.");
+                          await Logout(() => {
+                            router.replace("/signUp");
+                          });
+                        },
+                        (msg) => Alert.alert("Error", msg)
+                      );
+                    }
+                  }
+                ]
+              );
+            }}
+          />
+        </View>
+      </View>
     </View>
+
+
   );
+
+
 }
 
 const styles = StyleSheet.create({
@@ -206,4 +273,5 @@ const styles = StyleSheet.create({
   },
   roleText: { color: "#000" },
   activeRoleText: { color: "#fff", fontWeight: "bold" },
+
 });
