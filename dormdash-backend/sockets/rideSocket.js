@@ -2,6 +2,7 @@ import pool from '../db.js';
 
 const activeDrivers = new Map(); // driverId -> {socketId, lat, lng, isAvailable}
 const activeRiders = new Map();  // riderId -> {socketId, currentRideId}
+const activeRides = new Map();       // rideId -> {riderId, driverId, status, ...}
 
 // Simple method for real-time storage, can be replaced with firebase storage in future
 function getDistance(lat1, lon1, lat2, lon2) {
@@ -37,6 +38,23 @@ export function registerRideSocketHandlers(io, socket) {
     driver.lat = lat;
     driver.lng = lng;
     driver.isAvailable = isAvailable;
+  });
+
+  // driver live location during ride
+  socket.on("driverLocation", ({ driverId, lat, lng, rideId }) => {
+    const ride = activeRides.get(rideId);
+    if (!ride) return;
+
+    const riderInfo = activeRiders.get(ride.riderId);
+    if (riderInfo) {
+      io.to(riderInfo.socketId).emit("updateDriverLocation", { lat, lng });
+    }
+
+    const driver = activeDrivers.get(driverId);
+    if (driver) {
+      driver.lat = lat;
+      driver.lng = lng;
+    }
   });
 
    // Rider requests ride
@@ -93,11 +111,19 @@ export function registerRideSocketHandlers(io, socket) {
         [bestDriver.driverId, rideId]
       );
 
+      //track as active ride
+      activeRides.set(rideId, {
+        riderId: data.riderId,
+        driverId: bestDriver.driverId,
+        status: "matched",
+      });
+
       // Notify rider
       if (rider) {
         io.to(rider.socketId).emit("matchFound", {
           rideId,
           driverId: bestDriver.driverId,
+          status: "matched",
         });
       }
 
@@ -121,25 +147,70 @@ export function registerRideSocketHandlers(io, socket) {
         [rideId]
       );
 
+      const ride = activeRides.get(rideId);
+      if (ride) ride.status = "driver_en_route";
+
+      // Notify rider
       for (const [rid, info] of activeRiders.entries()) {
         if (info.currentRideId === rideId) {
-          io.to(info.socketId).emit("rideAccepted", { rideId, driverId });
+          io.to(info.socketId).emit("rideAccepted", {
+            rideId,
+            driverId,
+            status: "driver_en_route",
+          });
         }
       }
+
     } catch (err) {
       console.error("acceptRide error:", err);
     }
   });
 
-  // Driver sends live GPS
-  socket.on("driverLocation", ({ driverId, lat, lng, rideId }) => {
-    for (const [rid, info] of activeRiders.entries()) {
-      if (info.currentRideId === rideId) {
-        io.to(info.socketId).emit("updateDriverLocation", { lat, lng });
-      }
+
+  // Driver arrived at pickup
+  socket.on("driverArrived", ({ rideId }) => {
+    const ride = activeRides.get(rideId);
+    if (!ride) return;
+
+    ride.status = "arrived_pickup";
+
+    const riderInfo = activeRiders.get(ride.riderId);
+    if (riderInfo) {
+      io.to(riderInfo.socketId).emit("driverArrived", { rideId });
     }
   });
 
+  //trip started
+  socket.on("tripStarted", ({ rideId }) => {
+    const ride = activeRides.get(rideId);
+    if (!ride) return;
+
+    ride.status = "trip_started";
+
+    const riderInfo = activeRiders.get(ride.riderId);
+    if (riderInfo) {
+      io.to(riderInfo.socketId).emit("tripStarted", { rideId });
+    }
+  });
+
+  // trip completed
+  socket.on("tripCompleted", ({ rideId }) => {
+    const ride = activeRides.get(rideId);
+    if (!ride) return;
+
+    ride.status = "trip_completed";
+
+    const riderInfo = activeRiders.get(ride.riderId);
+    if (riderInfo) {
+      io.to(riderInfo.socketId).emit("tripCompleted", { rideId });
+    }
+
+    // Cleanup
+    activeRides.delete(rideId);
+  });
+
+
+  // Chat message between rider and driver
   socket.on("chatMessage", (msg) => {
     io.emit("newChatMessage", msg);
   });
