@@ -1,6 +1,5 @@
 import * as SecureStore from "expo-secure-store";
-import { Alert } from "react-native";
-import { getUserInfo } from "./useAuthUser";
+
 
 const API_BASE =
   process.env.EXPO_PUBLIC_API_BASE ??

@@ -12,7 +12,7 @@ export default function MainView() {
 
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
 
-  // 👇 NEW: track which ride is currently active (after driver & rider accept)
+  // track which ride is currently active (after driver & rider accept)
   const [activeRideId, setActiveRideId] = useState<number | null>(null);
 
   const [activeTab, setActiveTab] = useState<
@@ -97,7 +97,7 @@ export default function MainView() {
         );
 
       case "ride":
-        // 👇 Pass callback so RidePage can tell us when a ride becomes active
+        //  Pass callback so RidePage can tell us when a ride becomes active
         return (
           <RidePage
             location={location ?? undefined}
@@ -106,7 +106,7 @@ export default function MainView() {
         );
 
       case "chat":
-        // 👇 ChatPage will only enable chat when rideId is not null
+        // ChatPage will only enable chat when rideId is not null
         return <ChatPage rideId={activeRideId} />;
 
         
