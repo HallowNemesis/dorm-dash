@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   Button,
   StyleSheet,
   Alert,
+  Switch,
 } from "react-native";
 import { LocationObject } from "expo-location";
 import { getSocket } from "../../utils/socket";
@@ -13,33 +13,63 @@ import { useAuthUser } from "../../utils/useAuthUser";
 import DriverModePage from "../components/DriverModePage";
 import SearchBox from "../components/SearchBox";
 
+
 type RidePageProps = {
   location?: LocationObject | null;
 };
 
-type Destination = {
+
+type Place = {
   lat: number;
   lng: number;
   name: string;
-} | null;
+};
 
 export default function RidePage({ location }: RidePageProps) {
   const { userId, role, loading } = useAuthUser();
 
-  const [pickup, setPickup] = useState("");
-  const [destination, setDestination] = useState("");
   const [driverMode, setDriverMode] = useState(false);
-  const [selectedDest, setSelectedDest] = useState<Destination>(null);
 
-  // Register rider and listen for ride events
+  const [useCurrentPickup, setUseCurrentPickup] = useState(true);
+  const [pickupText, setPickupText] = useState("Current Location");
+  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
+
+  const [destinationText, setDestinationText] = useState("");
+  const [destinationCoords, setDestinationCoords] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
+
   useEffect(() => {
-    if (loading || !userId || driverMode) return;
+    if (location && useCurrentPickup) {
+      setPickupText("Current Location");
+      setPickupCoords({
+        lat: location.coords.latitude,
+        lng: location.coords.longitude,
+      });
+    }
+  }, [location, useCurrentPickup]);
+
+  // Register rider & listen for ride events
+  useEffect(() => {
+    if (driverMode) return; // only for riders
+    if (loading) return;
+    if (!userId) return;
 
     const socket = getSocket();
+    if (!socket.connected) socket.connect();
 
     socket.emit("registerUser", {
-      userId: userId,
+      userId,
       role: "rider",
+    });
+
+    socket.on("connect", () => {
+      socket.emit("registerUser", {
+        userId,
+        role: "rider",
+      });
     });
 
     socket.on("matchFound", (data) => {
@@ -61,41 +91,48 @@ export default function RidePage({ location }: RidePageProps) {
     };
   }, [loading, userId, driverMode]);
 
-    const handlePlaceSelect = (place: { lat: number; lng: number; name: string }) => {
-    setSelectedDest(place);
-    setDestination(place.name);
+  // Google Places selection
+  const handlePickupSelect = (place: Place) => {
+    setPickupText(place.name);
+    setPickupCoords({ lat: place.lat, lng: place.lng });
   };
 
+  const handleDestinationSelect = (place: Place) => {
+    setDestinationText(place.name);
+    setDestinationCoords({ lat: place.lat, lng: place.lng });
+  };
+
+  // Request a ride
   const handleRequestRide = () => {
     if (loading) return;
+
     if (!userId) {
-      Alert.alert("Error", "You must be logged in.");
-      return;
+      return Alert.alert("Error", "You must be logged in.");
     }
-    if (!pickup || !destination) {
-      Alert.alert("Error", "Enter pickup & destination");
-      return;
+
+    if (!pickupCoords) {
+      return Alert.alert("Error", "Pickup location not set.");
     }
-    if (!location) {
-      Alert.alert("Error", "GPS not available.");
-      return;
+
+    if (!destinationCoords) {
+      return Alert.alert(
+        "Destination Required",
+        "Please select a destination from the suggestions list."
+      );
     }
-    if (!selectedDest) {
-      Alert.alert("Error", "Please select a destination from the search box.");
-      return;
-    }
+
 
     const socket = getSocket();
 
     socket.emit("requestRide", {
       riderId: userId,
-      pickup_lat: location.coords.latitude,
-      pickup_lng: location.coords.longitude,
-      dest_lat: selectedDest.lat,
-      dest_lng: selectedDest.lng,
+      pickup_lat: pickupCoords.lat,
+      pickup_lng: pickupCoords.lng,
+      dest_lat: destinationCoords.lat,
+      dest_lng: destinationCoords.lng,
     });
 
-    Alert.alert("Ride Requested", destination);
+    Alert.alert("Ride Requested", destinationText);
   };
 
   if (loading) {
@@ -123,7 +160,7 @@ export default function RidePage({ location }: RidePageProps) {
     <View style={styles.container}>
       <Text style={styles.title}>Request a Ride</Text>
 
-      {/* Only drivers can toggle driver mode */}
+      {/* Driver Mode Toggle */}
       {role === "driver" && (
         <View style={{ marginBottom: 20 }}>
           <Button
@@ -134,25 +171,31 @@ export default function RidePage({ location }: RidePageProps) {
         </View>
       )}
 
-      <TextInput
-        placeholder="Pickup location"
-        value={pickup}
-        onChangeText={setPickup}
-        style={styles.input}
-      />
-
-      <View style={{ marginBottom: 10 }}>
-        <SearchBox
-          defaultValue={destination}
-          onPlaceSelect={handlePlaceSelect}
+      {/* Pickup + auto-filled */}
+      <View style={styles.row}>
+        <Text style={styles.label}>Use Current Location</Text>
+        <Switch
+          value={useCurrentPickup}
+          onValueChange={(t) => setUseCurrentPickup(t)}
         />
       </View>
 
-      <TextInput
-        placeholder="Destination"
-        value={destination}
-        onChangeText={setDestination}
-        style={styles.input}
+      {/* Pickup + auto-filled  */}
+      <SearchBox
+        defaultValue={useCurrentPickup ? "Current Location" : pickupText}
+        disabled={useCurrentPickup}
+        onPlaceSelect={handlePickupSelect}
+      />
+
+      {/* DESTINATION */}
+      <Text style={styles.label}>Destination</Text>
+      <SearchBox
+        defaultValue={destinationText}
+        onSearchChange={(text) => {
+          setDestinationText(text);
+          setDestinationCoords(null); // <-- Prevents stale coordinates
+        }}
+        onPlaceSelect={handleDestinationSelect}
       />
 
       <Button title="Request Ride" onPress={handleRequestRide} />
@@ -160,11 +203,12 @@ export default function RidePage({ location }: RidePageProps) {
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    justifyContent: "center",
+    justifyContent: "flex-start",
   },
   title: {
     fontSize: 24,
@@ -172,11 +216,21 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
   },
+  label: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,
     padding: 10,
     marginBottom: 15,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    alignItems: "center",
   },
 });

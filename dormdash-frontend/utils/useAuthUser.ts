@@ -1,6 +1,7 @@
 // utils/useAuthUser.ts
 import { useEffect, useState } from "react";
 import * as SecureStore from "expo-secure-store";
+import {jwtDecode} from "jwt-decode";
 
 const API_BASE =
   process.env.EXPO_PUBLIC_API_BASE ??
@@ -17,11 +18,7 @@ type UserState = {
 
 function decodeJwt(token: string): { id?: number; email?: string } {
   try {
-    const [, payload] = token.split(".");
-    const decoded = JSON.parse(
-      Buffer.from(payload, "base64").toString("utf8")
-    );
-    return decoded;
+    return jwtDecode(token);
   } catch {
     return {};
   }

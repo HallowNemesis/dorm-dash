@@ -5,47 +5,48 @@ type Props = {
   onSearchChange?: (str: string) => void;
   defaultValue?: string;
   onPlaceSelect?: (location: { lat: number; lng: number; name: string }) => void;
+  disabled?: boolean;  
 };
 
 const customStyles = {
-    container: {
-      width: '90%',
-       backgroundColor:"#bfbfbf",
-      marginHorizontal: 0,
-      borderRadius:10,
-      alignSelf:"center"
+  container: {
+    width: '90%',
+    backgroundColor: "#bfbfbf",
+    marginHorizontal: 0,
+    borderRadius: 10,
+    alignSelf: "center"
+  },
+  input: {
+    height: 45,
+    borderColor: '#cccccc',
+    borderRadius: 10,
+  },
+  suggestionsContainer: {
+    backgroundColor: '#ffffff',
+    maxHeight: 250,
+  },
+  suggestionItem: {
+    padding: 15,
+  },
+  suggestionText: {
+    main: {
+      fontSize: 16,
+      color: '#333',
     },
-    input: {
-      height: 45,
-      borderColor: '#cccccc',
-      borderRadius: 10,
-    },
-    suggestionsContainer: {
-      backgroundColor: '#ffffff',
-      maxHeight: 250,
-    },
-    suggestionItem: {
-      padding: 15,
-    },
-    suggestionText: {
-      main: {
-        fontSize: 16,
-        color: '#333',
-      },
-      secondary: {
-        fontSize: 14,
-        color: '#666',
-      }
-    },
-    loadingIndicator: {
-      color: '#999',
-    },
-    placeholder: {
-      color: '#999',
+    secondary: {
+      fontSize: 14,
+      color: '#666',
     }
-  } as const;
+  },
+  loadingIndicator: {
+    color: '#999',
+  },
+  placeholder: {
+    color: '#999',
+  }
+} as const;
 
-export default function SearchBox({ onSearchChange, defaultValue = "", onPlaceSelect, }: Props) {
+export default function SearchBox({ onSearchChange, defaultValue = "", onPlaceSelect, disabled }: Props) {
 
   const apiKey =
     Constants.expoConfig?.extra?.googlePlacesKey ||
@@ -53,12 +54,13 @@ export default function SearchBox({ onSearchChange, defaultValue = "", onPlaceSe
     "";
 
 
- return (
+  return (
     <GooglePlacesTextInput
       apiKey={apiKey}
       placeHolderText="Where do you want to go?"
       value={defaultValue}
       onPlaceSelect={(place: any) => {
+        if (disabled) return;                // ⬅ Prevent selection
         const coords = place?.geometry?.location;
         if (coords && onPlaceSelect) {
           onPlaceSelect({
@@ -68,8 +70,17 @@ export default function SearchBox({ onSearchChange, defaultValue = "", onPlaceSe
           });
         }
       }}
-      onTextChange={onSearchChange}
-      style={customStyles}
+      onTextChange={(text) => {
+        if (disabled) return;
+        onSearchChange && onSearchChange(text);
+      }}
+      style={{
+        ...customStyles,
+        input: {
+          ...customStyles.input,
+          backgroundColor: disabled ? "#eee" : "#fff",   // ⬅ Grey-out box when disabled
+        },
+      }}
     />
   );
 }
