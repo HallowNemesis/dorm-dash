@@ -1,5 +1,4 @@
 import * as SecureStore from "expo-secure-store";
-import { method } from "lodash";
 import { Alert } from "react-native";
 import { getUserInfo } from "./useAuthUser";
 

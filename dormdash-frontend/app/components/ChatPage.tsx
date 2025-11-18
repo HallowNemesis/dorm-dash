@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { getSocket } from "../../utils/socket"; // <-- Use shared socket
+import { getSocket } from "../../utils/socket";
 
 type Message = {
   id: string;
@@ -26,17 +26,6 @@ export default function ChatPage({ rideId }: ChatPageProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageText, setMessageText] = useState("");
 
-  // If no active ride, show locked screen
-  if (!rideId) {
-    return (
-      <View style={styles.lockedContainer}>
-        <Text style={styles.lockedTitle}>Chat Unavailable</Text>
-        <Text style={styles.lockedSubtitle}>
-          Chat becomes available once a ride is accepted.
-        </Text>
-      </View>
-    );
-  }
 
   useEffect(() => {
     const socket = getSocket();
@@ -55,20 +44,32 @@ export default function ChatPage({ rideId }: ChatPageProps) {
     };
   }, [rideId]);
 
+  // If no active ride, show locked screen
+  if (!rideId) {
+    return (
+      <View style={styles.lockedContainer}>
+        <Text style={styles.lockedTitle}>Chat Unavailable</Text>
+        <Text style={styles.lockedSubtitle}>
+          Chat becomes available once a ride is accepted.
+        </Text>
+      </View>
+    );
+  }
+
+
   const handleSendMessage = () => {
     if (!messageText.trim()) return;
 
     const socket = getSocket();
 
     const msg: Message = {
-      id: Math.random().toString(),
+      id: `${Date.now()}-${Math.random()}`, //better random id
       text: messageText,
       sender: "rider", // update later when you detect driver/rider
       rideId,
     };
 
     socket.emit("chatMessage", msg);
-    setMessages((prev) => [...prev, msg]);
     setMessageText("");
   };
 
