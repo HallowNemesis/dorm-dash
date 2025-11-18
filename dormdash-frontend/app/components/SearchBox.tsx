@@ -1,86 +1,113 @@
+import React, { useState } from "react";
+import { View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Constants from "expo-constants";
-import GooglePlacesTextInput from 'react-native-google-places-textinput';
 
 type Props = {
-  onSearchChange?: (str: string) => void;
   defaultValue?: string;
-  onPlaceSelect?: (location: { lat: number; lng: number; name: string }) => void;
-  disabled?: boolean;  
+  onSearchChange?: (str: string) => void;
+  onPlaceSelect?: (place: { lat: number; lng: number; name: string }) => void;
+  disabled?: boolean;
 };
 
-const customStyles = {
-  container: {
-    width: '90%',
-    backgroundColor: "#bfbfbf",
-    marginHorizontal: 0,
-    borderRadius: 10,
-    alignSelf: "center"
-  },
+export default function SearchBox({
+  defaultValue = "",
+  onSearchChange,
+  onPlaceSelect,
+  disabled,
+}: Props) {
+  const [query, setQuery] = useState(defaultValue);
+  const [results, setResults] = useState<any[]>([]);
+  const apiKey = Constants.expoConfig?.extra?.googlePlacesKey;
+
+  const searchPlaces = async (text: string) => {
+    setQuery(text);
+    onSearchChange?.(text);
+
+    if (disabled || text.length < 2) {
+      setResults([]);
+      return;
+    }
+
+    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
+      text
+    )}&key=${apiKey}&components=country:us`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.predictions) {
+      setResults(data.predictions);
+    } else {
+      setResults([]);
+    }
+  };
+
+  const selectPlace = async (placeId: string, description: string) => {
+    const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${apiKey}`;
+
+    const res = await fetch(detailsUrl);
+    const data = await res.json();
+
+    const loc = data.result?.geometry?.location;
+    if (!loc) return;
+
+    setQuery(description);
+    setResults([]);
+
+    onPlaceSelect?.({
+      lat: loc.lat,
+      lng: loc.lng,
+      name: description,
+    });
+  };
+
+  return (
+    <View>
+      <TextInput
+        style={[styles.input, disabled && { backgroundColor: "#eee" }]}
+        value={query}
+        editable={!disabled}
+        placeholder="Search place..."
+        onChangeText={searchPlaces}
+      />
+
+      {results.length > 0 && !disabled && (
+        <FlatList
+          style={styles.suggestions}
+          data={results}
+          keyExtractor={(item) => item.place_id}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.suggestionItem}
+              onPress={() => selectPlace(item.place_id, item.description)}
+            >
+              <Text>{item.description}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
   input: {
     height: 45,
-    borderColor: '#cccccc',
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    paddingHorizontal: 10,
+    marginBottom: 5,
+    backgroundColor: "#fff",
   },
-  suggestionsContainer: {
-    backgroundColor: '#ffffff',
+  suggestions: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
     maxHeight: 250,
   },
   suggestionItem: {
-    padding: 15,
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
   },
-  suggestionText: {
-    main: {
-      fontSize: 16,
-      color: '#333',
-    },
-    secondary: {
-      fontSize: 14,
-      color: '#666',
-    }
-  },
-  loadingIndicator: {
-    color: '#999',
-  },
-  placeholder: {
-    color: '#999',
-  }
-} as const;
-
-export default function SearchBox({ onSearchChange, defaultValue = "", onPlaceSelect, disabled }: Props) {
-
-  const apiKey =
-    Constants.expoConfig?.extra?.googlePlacesKey ||
-    process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ||
-    "";
-
-
-  return (
-    <GooglePlacesTextInput
-      apiKey={apiKey}
-      placeHolderText="Where do you want to go?"
-      value={defaultValue}
-      onPlaceSelect={(place: any) => {
-        if (disabled) return;                // ⬅ Prevent selection
-        const coords = place?.geometry?.location;
-        if (coords && onPlaceSelect) {
-          onPlaceSelect({
-            lat: coords.lat,
-            lng: coords.lng,
-            name: place.name || place.formatted_address || "Unknown location",
-          });
-        }
-      }}
-      onTextChange={(text) => {
-        if (disabled) return;
-        onSearchChange && onSearchChange(text);
-      }}
-      style={{
-        ...customStyles,
-        input: {
-          ...customStyles.input,
-          backgroundColor: disabled ? "#eee" : "#fff",   // ⬅ Grey-out box when disabled
-        },
-      }}
-    />
-  );
-}
+});
