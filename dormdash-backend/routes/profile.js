@@ -1,5 +1,7 @@
 // routes/profile.js
-import express from 'express';
+import express, { json } from 'express';
+import jwt from jsonwebtoken;
+import pool from '../db.js';
 
 const router = express.Router();
 

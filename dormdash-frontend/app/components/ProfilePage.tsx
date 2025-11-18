@@ -1,9 +1,17 @@
 import { useEffect, useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Alert, Image, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  StyleSheet,
+  Alert,
+  Image,
+  Pressable,
+} from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { getProfile, updateProfile } from "../../utils/auth";
 import { useAuthUser } from "../../utils/useAuthUser";
-
 
 type Role = "rider" | "driver";
 
@@ -14,16 +22,14 @@ type ProfilePageProps = {
 export default function ProfilePage({}: ProfilePageProps) {
   const { loading } = useAuthUser();
 
-
   const [fullName, setFullName] = useState("");
   const [bio, setBio] = useState("");
   const [role, setRole] = useState<Role>("rider");
-
   const [email, setEmail] = useState("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-useEffect(() => {
+  useEffect(() => {
     async function load() {
       const { ok, data } = await getProfile();
       if (!ok || !data) return;
@@ -31,6 +37,7 @@ useEffect(() => {
       setBio(data.bio ?? "");
       setRole((data.role as Role) ?? "rider");
       setProfileImage(data.avatar_url ?? null);
+      setEmail(data.email ?? "");
     }
     load();
   }, []);
@@ -100,14 +107,15 @@ useEffect(() => {
         style={styles.input}
       />
 
+      {/* Email shown as read-only since backend doesn't update it here  */}
       <TextInput
         placeholder="Email"
         value={email}
-        onChangeText={setEmail}
+        editable={false}
         style={styles.input}
         keyboardType="email-address"
       />
-  
+
       <TextInput
         placeholder="Short Description"
         value={bio}
@@ -121,18 +129,30 @@ useEffect(() => {
           style={[styles.roleButton, role === "rider" && styles.activeRole]}
           onPress={() => setRole("rider")}
         >
-          <Text style={role === "rider" ? styles.activeRoleText : styles.roleText}>Rider</Text>
+          <Text
+            style={role === "rider" ? styles.activeRoleText : styles.roleText}
+          >
+            Rider
+          </Text>
         </Pressable>
 
         <Pressable
           style={[styles.roleButton, role === "driver" && styles.activeRole]}
           onPress={() => setRole("driver")}
         >
-          <Text style={role === "driver" ? styles.activeRoleText : styles.roleText}>Driver</Text>
+          <Text
+            style={role === "driver" ? styles.activeRoleText : styles.roleText}
+          >
+            Driver
+          </Text>
         </Pressable>
       </View>
 
-      <Button title="Save Profile" onPress={handleSave} />
+      <Button
+        title={saving ? "Saving..." : "Save Profile"}
+        onPress={handleSave}
+        disabled={saving}
+      />
     </View>
   );
 }

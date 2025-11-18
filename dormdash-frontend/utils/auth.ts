@@ -68,7 +68,7 @@ export async function TokenAuth(
     }
     const { response, data } = await PostToAPI({
       path: "auth/token-auth",
-      body: { token: token },
+      body: { token },
       onOK: () => onOk(),
       onFail: (_, d) => onFail && onFail(d.message ?? "Token invalid"),
     });
@@ -80,6 +80,7 @@ export async function TokenAuth(
     return { message: "Fatal error", ok: false };
   }
 }
+
 export async function Login(
   email: string,
   password: string,
@@ -89,9 +90,9 @@ export async function Login(
   try {
     const { response, data } = await PostToAPI({
       path: "auth/login",
-      body: { email, password: password },
-      onOK: (_, d) => {
-        SecureStore.setItem("token", d.token);
+      body: { email, password },
+      onOK: async (_, d) => {
+        await SecureStore.setItemAsync("token", d.token);
         onOk();
       },
       onFail: (_, d) => {
@@ -120,9 +121,9 @@ export async function CreateAcc(
   try {
     const { response, data } = await PostToAPI({
       path: "auth/signup",
-      body: { name, email, password: password },
-      onOK: (_, d) => {
-        SecureStore.setItem("token", d.token);
+      body: { name, email, password },
+      onOK: async (_, d) => {
+        await SecureStore.setItem("token", d.token);
         onOk();
       },
       onFail: (_, d) => {

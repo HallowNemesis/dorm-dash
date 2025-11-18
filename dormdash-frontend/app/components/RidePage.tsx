@@ -1,9 +1,17 @@
 import { useEffect, useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  StyleSheet,
+  Alert,
+} from "react-native";
 import { LocationObject } from "expo-location";
 import { getSocket } from "../../utils/socket";
 import { useAuthUser } from "../../utils/useAuthUser";
 import DriverModePage from "../components/DriverModePage";
+import SearchBox from "../components/SearchBox";
 
 type RidePageProps = {
   location?: LocationObject | null;
@@ -132,6 +140,13 @@ export default function RidePage({ location }: RidePageProps) {
         onChangeText={setPickup}
         style={styles.input}
       />
+
+      <View style={{ marginBottom: 10 }}>
+        <SearchBox
+          defaultValue={destination}
+          onPlaceSelect={handlePlaceSelect}
+        />
+      </View>
 
       <TextInput
         placeholder="Destination"
