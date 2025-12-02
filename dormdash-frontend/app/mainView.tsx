@@ -177,18 +177,6 @@ export default function MainView() {
             Profile
           </Text>
         </Pressable>
-
-        <Pressable
-          onPress={() =>
-            Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-              { text: "Cancel", style: "cancel" },
-              { text: "Yes", onPress: handleLogout },
-            ])
-          }
-          style={styles.navButton}
-        >
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </Pressable>
       </View>
     </View>
   );
