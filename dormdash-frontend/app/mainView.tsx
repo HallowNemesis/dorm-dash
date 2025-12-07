@@ -9,41 +9,35 @@ import ChatPage from "./components/ChatPage";
 import ProfilePage from "./components/ProfilePage";
 
 export default function MainView() {
-
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
 
-  // track which ride is currently active (after driver & rider accept)
-  const [activeRideId, setActiveRideId] = useState<number | null>(null);
+  const [selectedDestination, setSelectedDestination] = useState<{
+    lat: number;
+    lng: number;
+    name: string;
+  } | null>(null);
 
-  const [activeTab, setActiveTab] = useState<
-    "home" | "ride" | "chat" | "profile"
-  >("home");
+  const [activeRideId, setActiveRideId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<"home" | "ride" | "chat" | "profile">("home");
 
   const mapRef = useRef<MapView>(null);
 
+  // Load user GPS
   useEffect(() => {
-    async function getCurrentLocation() {
+    async function loadLoc() {
       let { status } = await Location.getForegroundPermissionsAsync();
-
       if (status !== "granted") {
-        const { status: requestStatus } =
-          await Location.requestForegroundPermissionsAsync();
-
-        if (requestStatus !== "granted") {
-          Alert.alert(
-            "Permission Denied",
-            "Location permission is required for the app to function properly."
-          );
+        let { status: req } = await Location.requestForegroundPermissionsAsync();
+        if (req !== "granted") {
+          Alert.alert("Permission Required", "Location permission is needed.");
           return;
         }
       }
-      let location = await Location.getCurrentPositionAsync({});
-      setLocation(location);
+      const loc = await Location.getCurrentPositionAsync({});
+      setLocation(loc);
     }
-    getCurrentLocation();
+    loadLoc();
   }, []);
-
-
 
   const region = location
     ? {
@@ -53,25 +47,30 @@ export default function MainView() {
         longitudeDelta: 0.01,
       }
     : {
-        latitude: 0,
-        longitude: 0,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
+        latitude: 37.1,
+        longitude: -80.55,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
       };
 
-  const handlePlaceSelect = (place: {
-    lat: number;
-    lng: number;
-    name: string;
-  }) => {
-    const newRegion = {
-      latitude: place.lat,
-      longitude: place.lng,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    };
-    mapRef.current?.animateToRegion(newRegion, 1000);
-    Alert.alert("Navigating to:", place.name);
+  // When user selects destination from HOME search bar
+  const handlePlaceSelect = (place: { lat: number; lng: number; name: string }) => {
+    setSelectedDestination(place);
+
+    mapRef.current?.animateToRegion(
+      {
+        latitude: place.lat,
+        longitude: place.lng,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      },
+      1000
+    );
+
+    Alert.alert("Destination Selected", place.name);
+
+    // 🚀 Automatically switch to Ride Page
+    setActiveTab("ride");
   };
 
   const renderTab = () => {
@@ -82,34 +81,28 @@ export default function MainView() {
             <View style={styles.searchContainer}>
               <SearchBox onPlaceSelect={handlePlaceSelect} />
             </View>
+
             <MapView
               ref={mapRef}
               style={{ flex: 1 }}
-              showsUserLocation
-              showsCompass
-              followsUserLocation
               region={region}
-              onMapReady={() => {
-                mapRef.current?.animateToRegion(region);
-              }}
+              showsUserLocation
+              onMapReady={() => mapRef.current?.animateToRegion(region)}
             />
           </View>
         );
 
       case "ride":
-        //  Pass callback so RidePage can tell us when a ride becomes active
         return (
           <RidePage
             location={location ?? undefined}
+            selectedDestination={selectedDestination}
             setActiveRideId={setActiveRideId}
           />
         );
 
       case "chat":
-        // ChatPage will only enable chat when rideId is not null
         return <ChatPage rideId={activeRideId} />;
-
-        
 
       case "profile":
         return <ProfilePage />;
@@ -121,58 +114,24 @@ export default function MainView() {
 
   return (
     <View style={styles.container}>
-      {/* Main content */}
       <View style={styles.content}>{renderTab()}</View>
 
-      {/* Bottom navigation */}
       <View style={styles.navBar}>
-        <Pressable
-          onPress={() => setActiveTab("home")}
-          style={styles.navButton}
-        >
-          <Text
-            style={
-              activeTab === "home" ? styles.activeText : styles.inactiveText
-            }
-          >
-            Home
-          </Text>
+        <Pressable onPress={() => setActiveTab("home")} style={styles.navButton}>
+          <Text style={activeTab === "home" ? styles.activeText : styles.inactiveText}>Home</Text>
         </Pressable>
 
-        <Pressable
-          onPress={() => setActiveTab("ride")}
-          style={styles.navButton}
-        >
-          <Text
-            style={
-              activeTab === "ride" ? styles.activeText : styles.inactiveText
-            }
-          >
-            Ride
-          </Text>
+        <Pressable onPress={() => setActiveTab("ride")} style={styles.navButton}>
+          <Text style={activeTab === "ride" ? styles.activeText : styles.inactiveText}>Ride</Text>
         </Pressable>
 
-        <Pressable
-          onPress={() => setActiveTab("chat")}
-          style={styles.navButton}
-        >
-          <Text
-            style={
-              activeTab === "chat" ? styles.activeText : styles.inactiveText
-            }
-          >
-            Chat
-          </Text>
+        <Pressable onPress={() => setActiveTab("chat")} style={styles.navButton}>
+          <Text style={activeTab === "chat" ? styles.activeText : styles.inactiveText}>Chat</Text>
         </Pressable>
 
-        <Pressable
-          onPress={() => setActiveTab("profile")}
-          style={styles.navButton}
-        >
+        <Pressable onPress={() => setActiveTab("profile")} style={styles.navButton}>
           <Text
-            style={
-              activeTab === "profile" ? styles.activeText : styles.inactiveText
-            }
+            style={activeTab === "profile" ? styles.activeText : styles.inactiveText}
           >
             Profile
           </Text>
@@ -191,26 +150,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     zIndex: 10,
   },
-  content: {
-    flex: 1,
-  },
+  content: { flex: 1 },
   navBar: {
+    height: 60,
     flexDirection: "row",
+    backgroundColor: "#1e1e1e",
     justifyContent: "space-around",
     alignItems: "center",
-    height: 60,
-    backgroundColor: "#1e1e1e",
   },
-  navButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-  },
-  activeText: {
-    color: "#ff6b6b",
-    fontWeight: "bold",
-  },
-  inactiveText: {
-    color: "#fff",
-  },
-  
+  navButton: { paddingVertical: 10 },
+  activeText: { color: "#ff6b6b", fontWeight: "bold" },
+  inactiveText: { color: "#fff" },
 });

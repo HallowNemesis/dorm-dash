@@ -15,7 +15,8 @@ import SearchBox from "../components/SearchBox";
 
 type RidePageProps = {
   location?: LocationObject | null;
-  setActiveRideId: (id: number | null) => void; // NEW
+  selectedDestination?: { lat: number; lng: number; name: string } | null;
+  setActiveRideId: (id: number | null) => void;
 };
 
 type Place = {
@@ -24,18 +25,19 @@ type Place = {
   name: string;
 };
 
-export default function RidePage({ location, setActiveRideId }: RidePageProps) {
+export default function RidePage({ location, selectedDestination, setActiveRideId }: RidePageProps) {
   const { userId, role, loading } = useAuthUser();
 
   const [driverMode, setDriverMode] = useState(false);
-
   const [useCurrentPickup, setUseCurrentPickup] = useState(true);
+
   const [pickupText, setPickupText] = useState("Current Location");
   const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const [destinationText, setDestinationText] = useState("");
   const [destinationCoords, setDestinationCoords] = useState<{ lat: number; lng: number } | null>(null);
 
+  // AUTO-FILL PICKUP (GPS)
   useEffect(() => {
     if (location && useCurrentPickup) {
       setPickupText("Current Location");
@@ -46,12 +48,22 @@ export default function RidePage({ location, setActiveRideId }: RidePageProps) {
     }
   }, [location, useCurrentPickup]);
 
-  // Rider listener + clear active ride on load
+  // AUTO-FILL DESTINATION FROM MAINVIEW
+  useEffect(() => {
+    if (selectedDestination) {
+      setDestinationText(selectedDestination.name);
+      setDestinationCoords({
+        lat: selectedDestination.lat,
+        lng: selectedDestination.lng,
+      });
+    }
+  }, [selectedDestination]);
+
+  // Socket setup
   useEffect(() => {
     if (driverMode) return;
     if (loading || !userId) return;
 
-    // rider starts with NO active ride
     setActiveRideId(null);
 
     const socket = getSocket();
@@ -59,18 +71,22 @@ export default function RidePage({ location, setActiveRideId }: RidePageProps) {
 
     socket.emit("registerUser", { userId, role: "rider" });
 
-    // For rider: Ride accepted by driver
-    socket.on("rideAccepted", (data) => {
-      setActiveRideId(data.rideId);     // UNLOCK CHAT
+    const handleRideAccepted = (data: any) => {
+      setActiveRideId(data.rideId);
       Alert.alert("Driver Accepted!", `Ride ID: ${data.rideId}`);
-    });
+    };
+
+    socket.on("rideAccepted", handleRideAccepted);
 
     return () => {
-      socket.off("rideAccepted");
+      socket.off("rideAccepted", handleRideAccepted);
     };
+
   }, [loading, userId, driverMode]);
 
+
   const handlePickupSelect = (place: Place) => {
+    setUseCurrentPickup(false);
     setPickupText(place.name);
     setPickupCoords({ lat: place.lat, lng: place.lng });
   };
@@ -82,12 +98,10 @@ export default function RidePage({ location, setActiveRideId }: RidePageProps) {
 
   const handleRequestRide = () => {
     if (!userId) return Alert.alert("Error", "You must be logged in.");
-    if (!pickupCoords) return Alert.alert("Error", "Pickup location not set.");
-    if (!destinationCoords)
-      return Alert.alert("Error", "Please select a destination.");
+    if (!pickupCoords) return Alert.alert("Error", "Pickup missing.");
+    if (!destinationCoords) return Alert.alert("Error", "Destination missing.");
 
-    const socket = getSocket();
-    socket.emit("requestRide", {
+    getSocket().emit("requestRide", {
       riderId: userId,
       pickup_lat: pickupCoords.lat,
       pickup_lng: pickupCoords.lng,
@@ -98,20 +112,10 @@ export default function RidePage({ location, setActiveRideId }: RidePageProps) {
     Alert.alert("Ride Requested", destinationText);
   };
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading user...</Text>
-      </View>
-    );
-  }
+  if (loading) return <Text>Loading...</Text>;
 
   if (driverMode && role === "driver") {
-    return (
-      <DriverModePage
-        setActiveRideId={setActiveRideId}   // 🔥 PASS DOWN
-      />
-    );
+    return <DriverModePage setActiveRideId={setActiveRideId} />;
   }
 
   return (
@@ -119,13 +123,7 @@ export default function RidePage({ location, setActiveRideId }: RidePageProps) {
       <Text style={styles.title}>Request a Ride</Text>
 
       {role === "driver" && (
-        <View style={{ marginBottom: 20 }}>
-          <Button
-            title="Switch to Driver Mode"
-            color="#ff6b6b"
-            onPress={() => setDriverMode(true)}
-          />
-        </View>
+        <Button title="Switch to Driver Mode" onPress={() => setDriverMode(true)} />
       )}
 
       <View style={styles.row}>
@@ -134,7 +132,7 @@ export default function RidePage({ location, setActiveRideId }: RidePageProps) {
       </View>
 
       <SearchBox
-        defaultValue={useCurrentPickup ? "Current Location" : pickupText}
+        defaultValue={pickupText}
         disabled={useCurrentPickup}
         onPlaceSelect={handlePickupSelect}
       />
@@ -142,10 +140,7 @@ export default function RidePage({ location, setActiveRideId }: RidePageProps) {
       <Text style={styles.label}>Destination</Text>
       <SearchBox
         defaultValue={destinationText}
-        onSearchChange={(text) => {
-          setDestinationText(text);
-          setDestinationCoords(null);
-        }}
+        onSearchChange={() => setDestinationCoords(null)}
         onPlaceSelect={handleDestinationSelect}
       />
 
